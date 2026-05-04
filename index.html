@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCV · 16ª BPM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080b0f;--s1:#0d1117;--s2:#131920;--s3:#1a2130;--s4:#1f2840;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);--cyan:#00e5ff;--green:#00e676;--red:#ff3d57;--amber:#ffb300;--orange:#ff6d00;--purple:#a78bfa;--txt:#e8edf5;--txt2:#7a8ba0;--txt3:#3a4a5a;--font:'Barlow',sans-serif;--cond:'Barlow Condensed',sans-serif;--mono:'JetBrains Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);display:flex;height:100vh}
+/* SIDEBAR */
+.sb{width:220px;min-width:220px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:20;overflow:hidden;position:relative}
+.sb::after{content:'';position:absolute;top:-80px;left:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,255,.05),transparent 65%);pointer-events:none}
+.sb-top{padding:22px 18px 18px;border-bottom:1px solid var(--border)}
+.sb-unit{font-family:var(--mono);font-size:9px;color:var(--cyan);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
+.sb-brand{font-family:var(--cond);font-size:32px;font-weight:800;line-height:1;color:var(--cyan)}
+.sb-name{font-size:11px;color:var(--txt3);margin-top:5px;line-height:1.45}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.sb-sec{font-family:var(--mono);font-size:8px;color:var(--txt3);letter-spacing:2px;text-transform:uppercase;padding:14px 18px 5px}
+.ni{display:flex;align-items:center;gap:9px;padding:10px 18px;cursor:pointer;color:var(--txt2);font-size:13px;font-weight:600;border-left:2px solid transparent;transition:all .15s;user-select:none}
+.ni:hover{color:var(--txt);background:rgba(255,255,255,.03);border-left-color:var(--border2)}
+.ni.on{color:var(--cyan);background:rgba(0,229,255,.06);border-left-color:var(--cyan)}
+.ni .ic{width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:5px;font-size:12px;flex-shrink:0}
+.ni.on .ic{background:rgba(0,229,255,.12)}
+.nb{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-family:var(--mono);font-weight:700;padding:1px 6px;border-radius:10px;min-width:16px;text-align:center;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+.sb-foot{padding:12px 18px;border-top:1px solid var(--border);font-family:var(--mono);font-size:9px;color:var(--txt3);display:flex;justify-content:space-between;align-items:center}
+.online{color:var(--green);display:flex;align-items:center;gap:4px}
+.online::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);display:block;animation:blink 2s infinite}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;background:rgba(13,17,23,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 26px;gap:14px;flex-shrink:0;backdrop-filter:blur(20px)}
+.tb-path{display:flex;align-items:center;gap:8px}
+.tb-unit{font-family:var(--mono);font-size:9px;color:var(--txt3);letter-spacing:1px}
+.tb-sep{color:var(--txt3)}
+.tb-title{font-family:var(--cond);font-size:19px;font-weight:700;letter-spacing:.5px}
+.tb-r{margin-left:auto;display:flex;align-items:center;gap:9px}
+.tb-dt{font-family:var(--mono);font-size:10px;color:var(--txt2);background:var(--s2);border:1px solid var(--border);padding:5px 11px;border-radius:6px}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--s2);color:var(--txt2);transition:all .15s;white-space:nowrap}
+.btn:hover{color:var(--txt);background:var(--s3);border-color:rgba(255,255,255,.2);transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn-cy{background:var(--cyan)!important;color:#000!important;border-color:var(--cyan)!important;font-weight:800}
+.btn-cy:hover{background:#00cfea!important}
+.btn-rd{background:rgba(255,61,87,.1);color:var(--red);border-color:rgba(255,61,87,.25)}
+.btn-rd:hover{background:var(--red)!important;color:#fff!important;border-color:var(--red)!important}
+.btn-gr{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.25)}
+.btn-gr:hover{background:var(--green)!important;color:#000!important;border-color:var(--green)!important}
+.btn-gh{background:transparent;border-color:transparent;color:var(--txt2)}
+.btn-gh:hover{background:var(--s2);border-color:var(--border)}
+.btn-sm{padding:4px 9px;font-size:11px;border-radius:5px}
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:22px 26px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--s3);border-radius:2px}
+.page{display:none}.page.on{display:block}
+/* STAT GRID */
+.sg{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:20px}
+.sc{background:var(--s1);border:1px solid var(--border);border-radius:9px;padding:16px 18px;position:relative;overflow:hidden;transition:all .2s}
+.sc:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.sc-gl{position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;opacity:.12;pointer-events:none}
+.sc-lb{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:var(--txt3);margin-bottom:8px}
+.sc-vl{font-family:var(--cond);font-size:38px;font-weight:800;line-height:1;letter-spacing:-1px}
+.sc-sb{font-size:10px;color:var(--txt2);margin-top:5px}
+.sc-tr{position:absolute;bottom:12px;right:14px;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600}
+.c-cy .sc-vl{color:var(--cyan)}.c-cy .sc-gl{background:var(--cyan)}.c-cy .sc-tr{background:rgba(0,229,255,.1);color:var(--cyan)}
+.c-gn .sc-vl{color:var(--green)}.c-gn .sc-gl{background:var(--green)}.c-gn .sc-tr{background:rgba(0,230,118,.1);color:var(--green)}
+.c-rd .sc-vl{color:var(--red)}.c-rd .sc-gl{background:var(--red)}.c-rd .sc-tr{background:rgba(255,61,87,.1);color:var(--red)}
+.c-am .sc-vl{color:var(--amber)}.c-am .sc-gl{background:var(--amber)}.c-am .sc-tr{background:rgba(255,179,0,.1);color:var(--amber)}
+.c-or .sc-vl{color:var(--orange)}.c-or .sc-gl{background:var(--orange)}.c-or .sc-tr{background:rgba(255,109,0,.1);color:var(--orange)}
+.c-wh .sc-vl{color:var(--txt)}
+/* DASH CHARTS */
+.dr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.dr2{grid-template-columns:1.35fr 1fr}
+.dc{background:var(--s1);border:1px solid var(--border);border-radius:9px;padding:20px;transition:border-color .2s}
+.dc:hover{border-color:var(--border2)}
+.dc-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.dc-t{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--txt2)}
+.dc-b{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--s3);color:var(--txt2);border:1px solid var(--border)}
+.donut-wrap{display:flex;align-items:center;gap:18px}
+.d-legend{flex:1;display:flex;flex-direction:column;gap:9px}
+.dl-row{display:flex;align-items:center;gap:7px;font-size:12px}
+.dl-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.dl-lbl{color:var(--txt2);flex:1}
+.dl-val{font-family:var(--mono);font-size:11px;color:var(--txt);font-weight:600}
+.dl-pct{font-family:var(--mono);font-size:9px;color:var(--txt3);width:28px;text-align:right}
+.or{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.or-lb{font-size:11px;color:var(--txt2);width:155px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.or-tr{flex:1;height:7px;background:var(--s3);border-radius:4px;overflow:hidden}
+.or-fl{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.22,1,.36,1)}
+.or-n{font-family:var(--mono);font-size:10px;color:var(--txt);width:20px;text-align:right;font-weight:600}
+.or-p{font-family:var(--mono);font-size:9px;color:var(--txt3);width:28px;text-align:right}
+.al-list{display:flex;flex-direction:column;gap:7px;max-height:220px;overflow-y:auto}
+.al-it{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--s2);transition:all .15s;animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.al-it:hover{border-color:var(--border2);background:var(--s3)}
+.al-d{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.al-b{flex:1}
+.al-tt{font-size:11px;font-weight:600;color:var(--txt);margin-bottom:1px}
+.al-sb{font-size:10px;color:var(--txt2);font-family:var(--mono)}
+.al-pl{font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(0,229,255,.08);color:var(--cyan);margin-right:4px}
+/* TABLE */
+.tr-h{display:flex;align-items:center;gap:11px;margin-bottom:18px}
+.tr-h h2{font-family:var(--cond);font-size:22px;font-weight:700}
+.tr-cnt{font-family:var(--mono);font-size:10px;color:var(--txt2);background:var(--s2);border:1px solid var(--border);padding:3px 9px;border-radius:4px}
+.tc{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.srch-w{display:flex;align-items:center;gap:7px;background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:8px 12px;flex:1;min-width:200px;transition:border-color .15s}
+.srch-w:focus-within{border-color:rgba(0,229,255,.35)}
+.srch-w input{background:none;border:none;outline:none;color:var(--txt);font-family:var(--font);font-size:13px;flex:1}
+.srch-w input::placeholder{color:var(--txt3)}
+.flt{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:8px 11px;color:var(--txt2);font-family:var(--font);font-size:12px;cursor:pointer;outline:none;transition:border-color .15s}
+.flt:focus{border-color:rgba(0,229,255,.35)}
+.tw-outer{border-radius:8px;border:1px solid var(--border);overflow:hidden}
+.tw-top{overflow-x:auto;overflow-y:hidden;height:10px;background:var(--s2);border-bottom:1px solid var(--border)}
+.tw-top::-webkit-scrollbar{height:6px}
+.tw-top::-webkit-scrollbar-track{background:var(--s2)}
+.tw-top::-webkit-scrollbar-thumb{background:var(--s4);border-radius:3px}
+.tw-top::-webkit-scrollbar-thumb:hover{background:var(--cyan)}
+.tw-inner-top{height:1px}
+.tw{overflow-x:auto}
+.tw::-webkit-scrollbar{height:0;width:0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--s2);color:var(--txt3);font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:1.5px;padding:11px 13px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2}
+tr{border-bottom:1px solid var(--border);transition:background .1s}
+tr:last-child{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+td{padding:10px 13px;vertical-align:middle}
+.placa{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--cyan);background:rgba(0,229,255,.07);padding:3px 7px;border-radius:3px;border:1px solid rgba(0,229,255,.13);white-space:nowrap;display:inline-block}
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:800;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.p-on{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+.p-bx{background:rgba(255,61,87,.1);color:var(--red);border:1px solid rgba(255,61,87,.2)}
+.p-mn{background:rgba(255,179,0,.1);color:var(--amber);border:1px solid rgba(255,179,0,.2)}
+.op{font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:3px;background:rgba(255,109,0,.1);color:var(--orange);border:1px solid rgba(255,109,0,.2);display:inline-block;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.pb{display:flex;align-items:center;gap:5px;min-width:80px}
+.pb-t{flex:1;height:5px;background:var(--s3);border-radius:3px;overflow:hidden;min-width:40px}
+.pb-f{height:100%;border-radius:3px}
+.pf-g{background:linear-gradient(90deg,#00b86b,#00e676)}
+.pf-y{background:linear-gradient(90deg,#b88a00,#ffb300)}
+.pf-r{background:linear-gradient(90deg,#bf1c30,#ff3d57)}
+.pb-n{font-family:var(--mono);font-size:9px;color:var(--txt2);width:28px}
+.km-m{font-family:var(--mono);font-size:11px}
+.ok{color:var(--green)}.wa{color:var(--amber)}.er{color:var(--red)}
+.ttag{font-size:9px;font-family:var(--mono);color:var(--txt3);background:var(--s3);padding:2px 5px;border-radius:3px;border:1px solid var(--border);white-space:nowrap}
+.acts{display:flex;gap:5px}
+.empty-c{text-align:center;padding:44px;color:var(--txt3);font-size:12px}
+.empty-c span{display:block;font-size:32px;margin-bottom:8px}
+/* PNEUS GRID */
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px}
+.pc{background:var(--s1);border:1px solid var(--border);border-radius:9px;padding:18px;transition:all .2s}
+.pc:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.4)}
+.pc-h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.pc-brand{font-family:var(--cond);font-size:17px;font-weight:700}
+.pc-mod{font-size:10px;color:var(--txt2);font-family:var(--mono);margin-top:2px}
+.qty-b{text-align:center;background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.15);border-radius:6px;padding:7px 10px}
+.qty-n{font-family:var(--cond);font-size:24px;font-weight:800;color:var(--cyan);line-height:1}
+.qty-l{font-family:var(--mono);font-size:8px;color:var(--txt3);margin-top:1px;letter-spacing:1px}
+.pc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px}
+.tag{font-family:var(--mono);font-size:9px;background:var(--s2);border:1px solid var(--border);padding:2px 7px;border-radius:3px;color:var(--txt2)}
+/* PASTILHAS */
+.past-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.past-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;transition:all .2s;position:relative;overflow:hidden}
+.past-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.4)}
+.past-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.past-placa{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--cyan);background:rgba(0,229,255,.07);padding:3px 7px;border-radius:3px;border:1px solid rgba(0,229,255,.13)}
+.past-modelo{font-size:13px;font-weight:600;margin-top:4px}
+.past-tipo{font-family:var(--mono);font-size:9px;color:var(--txt3);margin-top:2px}
+.past-pct-box{text-align:center;flex-shrink:0}
+.past-pct-val{font-family:var(--cond);font-size:30px;font-weight:800;line-height:1}
+.past-pct-lbl{font-family:var(--mono);font-size:8px;color:var(--txt3);letter-spacing:1px}
+.past-bar{height:9px;background:var(--s3);border-radius:5px;overflow:hidden;margin:12px 0}
+.past-bar-fill{height:100%;border-radius:5px;transition:width .6s cubic-bezier(.22,1,.36,1)}
+.past-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.past-info-item{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+.past-info-lbl{font-family:var(--mono);font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.past-info-val{font-size:12px;font-weight:600;color:var(--txt)}
+.past-alerta{font-size:10px;font-family:var(--mono);padding:5px 10px;border-radius:5px;text-align:center;margin-top:12px;font-weight:700;letter-spacing:.5px}
+.past-actions{display:flex;gap:7px;margin-top:10px}
+/* OS CARDS */
+.os-grid-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px}
+.os-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;transition:all .2s}
+.os-card:hover{border-color:var(--border2)}
+.os-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.os-head-left .os-num{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan)}
+.os-head-left .os-date{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:2px}
+.os-info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.os-field{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+.os-field-lbl{font-family:var(--mono);font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.os-field-val{font-size:12px;font-weight:600;color:var(--txt);word-break:break-word}
+.os-servicos{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.os-serv-tag{font-size:10px;font-family:var(--mono);background:rgba(167,139,250,.08);color:var(--purple);border:1px solid rgba(167,139,250,.2);padding:2px 8px;border-radius:4px}
+.os-actions{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+/* MODAL */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.ov.open{display:flex;animation:oa .2s ease}
+@keyframes oa{from{opacity:0}to{opacity:1}}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:28px;width:700px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 28px 72px rgba(0,0,0,.6);animation:ma .25s cubic-bezier(.22,1,.36,1)}
+@keyframes ma{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:none}}
+.modal-sm{width:480px}.modal-lg{width:820px}
+.modal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.m-title{font-family:var(--cond);font-size:22px;font-weight:700}
+.m-sub{font-size:11px;color:var(--txt2);font-family:var(--mono);margin-top:3px}
+.btn-x{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--s2);border:1px solid var(--border);color:var(--txt2);cursor:pointer;font-size:14px;transition:all .15s;flex-shrink:0}
+.btn-x:hover{background:var(--red);border-color:var(--red);color:#fff}
+.msec{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--txt3);padding:12px 0 9px;border-bottom:1px solid var(--border);margin-bottom:13px;margin-top:4px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.fg3{grid-template-columns:1fr 1fr 1fr}
+.fg4{grid-template-columns:1fr 1fr 1fr 1fr}
+.fg1{grid-template-columns:1fr}
+.fi{display:flex;flex-direction:column;gap:4px}
+.fi.fu{grid-column:1/-1}
+label{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:1px;color:var(--txt3)}
+input[type=text],input[type=number],input[type=date],select,textarea{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 11px;color:var(--txt);font-family:var(--font);font-size:13px;outline:none;transition:border-color .15s;-webkit-appearance:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:rgba(0,229,255,.45);background:var(--s3)}
+select option{background:var(--s2)}
+.mfoot{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;padding-top:18px;border-top:1px solid var(--border)}
+/* KM */
+.kml{display:flex;flex-direction:column;gap:7px;max-height:400px;overflow-y:auto}
+.kmr{display:flex;align-items:center;gap:11px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:7px;transition:border-color .15s}
+.kmr:hover{border-color:var(--border2)}
+.kmr-p{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cyan);width:75px;flex-shrink:0}
+.kmr-n{font-size:11px;color:var(--txt2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kmr-c{font-family:var(--mono);font-size:9px;color:var(--txt3);width:85px;text-align:right;flex-shrink:0}
+.kmr input{width:110px;flex-shrink:0;text-align:right;font-family:var(--mono)}
+/* REPORTS */
+.rpt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.rpt-card{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;transition:all .2s}
+.rpt-card:hover{border-color:var(--border2)}
+.rpt-icon{font-size:30px;margin-bottom:8px}
+.rpt-name{font-family:var(--cond);font-size:16px;font-weight:700;color:var(--txt)}
+.rpt-desc{font-size:11px;color:var(--txt2);margin-top:4px;font-family:var(--mono)}
+.rpt-fmts{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.rfmt{padding:5px 14px;border-radius:4px;font-size:11px;font-family:var(--mono);font-weight:700;cursor:pointer;border:1px solid;transition:all .15s}
+.rfmt.pdf{background:rgba(255,61,87,.1);color:var(--red);border-color:rgba(255,61,87,.3)}
+.rfmt.pdf:hover{background:var(--red);color:#fff}
+.rfmt.xls{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.3)}
+.rfmt.xls:hover{background:var(--green);color:#000}
+.rpt-filters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+/* SERVICOS */
+.serv-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:190px;overflow-y:auto;padding-right:4px}
+.serv-chk{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;font-size:12px;user-select:none}
+.serv-chk:hover{border-color:var(--border2);background:var(--s3)}
+.serv-chk input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--cyan);flex-shrink:0}
+</style></head><body>
+<nav class="sb">
+  <div class="sb-top"><div class="sb-unit">16ª BPM · PMDF</div><div class="sb-brand">SCV</div><div class="sb-name">Sistema de Controle<br>de Viaturas</div></div>
+  <div class="sb-nav">
+    <div class="sb-sec">Menu</div>
+    <div class="ni on" onclick="goTo('dash',this)"><span class="ic">📊</span>Dashboard</div>
+    <div class="ni" onclick="goTo('vtr',this)"><span class="ic">🚔</span>Viaturas<span class="nb" id="badge">0</span></div>
+    <div class="ni" onclick="goTo('os',this)"><span class="ic">📋</span>OS Abertas<span class="nb" id="badge-os">0</span></div>
+    <div class="ni" onclick="goTo('os-hist',this)"><span class="ic">✅</span>OS Realizadas</div>
+    <div class="ni" onclick="goTo('pastilhas',this)"><span class="ic">🔩</span>Pastilhas</div>
+    <div class="ni" onclick="goTo('pneus',this)"><span class="ic">🔧</span>Estoque Pneus</div>
+    <div class="sb-sec">Ações</div>
+    <div class="ni" onclick="openKmModal()"><span class="ic">📍</span>Atualizar KM</div>
+    <div class="ni" onclick="openCad()"><span class="ic">➕</span>Nova Viatura</div>
+    <div class="ni" onclick="openOsModal()"><span class="ic">📝</span>Nova OS</div>
+    <div class="ni" onclick="openPneu()"><span class="ic">📦</span>Novo Pneu</div>
+    <div class="ni" onclick="openRelatorio()"><span class="ic">📄</span>Relatórios</div>
+  </div>
+  <div class="sb-foot"><span id="sb-dt"></span><span class="online">ATIVO</span></div>
+</nav>
+<div class="main">
+  <div class="topbar">
+    <div class="tb-path"><span class="tb-unit">16ª BPM</span><span class="tb-sep">/</span><span class="tb-title" id="tbt">Dashboard</span></div>
+    <div class="tb-r"><div class="tb-dt" id="tb-dt"></div><button class="btn btn-cy" id="topbtn" onclick="openCad()">+ Nova Viatura</button></div>
+  </div>
+  <div class="content">
+
+    <div class="page on" id="p-dash">
+      <div class="sg" id="sg"></div>
+      <div class="dr">
+        <div class="dc"><div class="dc-h"><span class="dc-t">Status da Frota</span><span class="dc-b" id="dob-s">—</span></div><div class="donut-wrap"><svg id="donut" viewBox="0 0 120 120" width="130" height="130"></svg><div class="d-legend" id="dleg"></div></div></div>
+        <div class="dc"><div class="dc-h"><span class="dc-t">Frota por Tipo</span><span class="dc-b" id="dob-t">—</span></div><div id="bar-c"></div></div>
+        <div class="dc"><div class="dc-h"><span class="dc-t">⚠ Alertas Ativos</span><span class="dc-b" id="dob-al">0</span></div><div class="al-list" id="al-list"></div></div>
+      </div>
+      <div class="dr dr2">
+        <div class="dc"><div class="dc-h"><span class="dc-t">Status de Revisões</span></div><div id="rev-c"></div></div>
+        <div class="dc"><div class="dc-h"><span class="dc-t">OS Prima Abertas</span><span class="dc-b" id="dob-os">0</span></div><div id="os-c"></div></div>
+      </div>
+    </div>
+
+    <div class="page" id="p-vtr">
+      <div class="tr-h"><h2>Viaturas</h2><span class="tr-cnt" id="vtr-cnt">—</span><button class="btn btn-cy" style="margin-left:auto" onclick="openCad()">+ Nova Viatura</button></div>
+      <div class="tc">
+        <div class="srch-w"><span style="color:var(--txt3)">🔍</span><input type="text" id="srch" placeholder="Buscar placa, modelo, prefixo..." oninput="renderVtr()"></div>
+        <select class="flt" id="fst" onchange="renderVtr()"><option value="">Todos os Status</option><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Manutenção</option></select>
+        <select class="flt" id="ftp" onchange="renderVtr()"><option value="">Todos os Tipos</option><option value="VPC">VPC</option><option value="VPI">VPI</option><option value="VAAD">VAAD</option><option value="VTP">VTP</option><option value="VMC">VMC</option><option value="VSO">VSO</option><option value="VSV">VSV</option></select>
+      </div>
+      <div class="tw-outer">
+        <div class="tw-top" id="tw-top"><div class="tw-inner-top" id="tw-inner"></div></div>
+        <div class="tw" id="tw-main">
+          <table id="vtr-table">
+            <thead><tr>
+              <th>#</th><th>Placa</th><th>Prefixo</th><th>Tipo</th><th>Marca / Modelo</th>
+              <th>KM Atual</th><th>Data Últ. Revisão</th><th>KM Próx. Revisão</th>
+              <th>Data Próx. Revisão</th><th>KM Restante</th>
+              <th>Pneus</th><th>Pastilhas</th><th>Status</th><th>OS Prima</th><th>Local</th><th></th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="p-os">
+      <div class="tr-h"><h2>OS Prima — Abertas</h2><span class="tr-cnt" id="os-cnt">—</span><button class="btn btn-cy" style="margin-left:auto" onclick="openOsModal()">+ Nova OS</button></div>
+      <div class="tc">
+        <div class="srch-w"><span style="color:var(--txt3)">🔍</span><input type="text" id="os-srch" placeholder="Buscar placa, nº OS, veículo..." oninput="renderOs()"></div>
+        <select class="flt" id="os-fst" onchange="renderOs()"><option value="">Todos os Status</option><option value="AGUARDANDO ENVIAR VTR">Aguard. Enviar VTR</option><option value="AGUARDANDO ORÇAMENTO">Aguard. Orçamento</option><option value="REAVALIAÇÃO">Reavaliação</option><option value="AGUARDANDO APROVAÇÃO">Aguard. Aprovação</option><option value="APROVADA">Aprovada</option></select>
+      </div>
+      <div class="os-grid-wrap" id="os-list"></div>
+    </div>
+
+    <div class="page" id="p-os-hist">
+      <div class="tr-h"><h2>OS Realizadas / Entregues</h2><span class="tr-cnt" id="os-hist-cnt">—</span></div>
+      <div class="tc"><div class="srch-w"><span style="color:var(--txt3)">🔍</span><input type="text" id="osh-srch" placeholder="Buscar placa, nº OS..." oninput="renderOsHist()"></div></div>
+      <div class="os-grid-wrap" id="os-hist-list"></div>
+    </div>
+
+    <div class="page" id="p-pastilhas">
+      <div class="tr-h"><h2>Controle de Pastilhas</h2><span class="tr-cnt" id="past-cnt">—</span><button class="btn btn-cy" style="margin-left:auto" onclick="openPastModal()">🔩 Registrar Troca</button></div>
+      <div class="tc">
+        <div class="srch-w"><span style="color:var(--txt3)">🔍</span><input type="text" id="past-srch" placeholder="Buscar placa ou modelo..." oninput="renderPastilhas()"></div>
+        <select class="flt" id="past-fst" onchange="renderPastilhas()"><option value="">Todos os Status</option><option value="OK">Em dia (&gt;50%)</option><option value="ALERTA">Atenção (20–50%)</option><option value="CRITICO">Crítico (≤20%)</option></select>
+      </div>
+      <div class="past-grid" id="past-grid"></div>
+    </div>
+
+    <div class="page" id="p-pneus">
+      <div class="tr-h"><h2>Estoque de Pneus</h2><span class="tr-cnt" id="pneu-cnt">—</span><button class="btn btn-cy" style="margin-left:auto" onclick="openPneu()">+ Adicionar Pneu</button></div>
+      <div class="pg" id="pneu-grid"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAIS -->
+<div class="ov" id="ov-cad"><div class="modal modal-lg">
+  <div class="modal-top"><div><div class="m-title" id="cad-title">Nova Viatura</div><div class="m-sub">Preencha os dados completos</div></div><div class="btn-x" onclick="closeOv('ov-cad')">✕</div></div>
+  <div class="msec">Identificação</div>
+  <div class="fg">
+    <div class="fi"><label>Prefixo</label><input type="text" id="f-pref"></div>
+    <div class="fi"><label>Tombamento</label><input type="text" id="f-tomb"></div>
+    <div class="fi fu"><label>Tipo de Emprego</label><select id="f-tipo"><option value="VPC - PATRULHA E CERCO">VPC – Patrulha e Cerco</option><option value="VPI - PATRULHA E INTERCEPTAÇÃO">VPI – Patrulha e Interceptação</option><option value="VAAD - APOIO ADMINISTRATIVO">VAAD – Apoio Administrativo</option><option value="VTP - TRANSPORTE DE PESSOAS">VTP – Transporte de Pessoas</option><option value="VMC - VIATURAS MISSÕES CRÍTICAS">VMC – Missões Críticas</option><option value="VSO - SUPORTE OPERACIONAL">VSO – Suporte Operacional</option><option value="VSV - SERVIÇO VELADO">VSV – Serviço Velado</option><option value="Veículo">Veículo Genérico</option></select></div>
+    <div class="fi"><label>Marca</label><input type="text" id="f-marca"></div>
+    <div class="fi"><label>Modelo</label><input type="text" id="f-modelo"></div>
+    <div class="fi"><label>Versão</label><input type="text" id="f-versao"></div>
+    <div class="fi"><label>Transmissão</label><select id="f-trans"><option value="AUTOMATICA">Automática</option><option value="MANUAL">Manual</option></select></div>
+    <div class="fi"><label>Ano Fabricação</label><input type="number" id="f-anofab"></div>
+    <div class="fi"><label>Ano Modelo</label><input type="number" id="f-anomod"></div>
+    <div class="fi"><label>Placa</label><input type="text" id="f-placa" style="text-transform:uppercase"></div>
+  </div>
+  <div class="msec">Quilometragem & Revisão</div>
+  <div class="fg fg4">
+    <div class="fi"><label>KM Atual</label><input type="number" id="f-km" oninput="calcR('f')"></div>
+    <div class="fi"><label>Intervalo Revisão</label><select id="f-int" onchange="calcR('f')"><option value="5000">5.000 km</option><option value="10000">10.000 km</option></select></div>
+    <div class="fi"><label>KM Próxima Rev. (auto)</label><input type="number" id="f-kmrev" readonly style="opacity:.5"></div>
+    <div class="fi"><label>Data Última Revisão</label><input type="date" id="f-dtrev"></div>
+  </div>
+  <div class="fg">
+    <div class="fi"><label>Data Próxima Revisão</label><input type="date" id="f-dtprev"></div>
+    <div class="fi"><label>Situação</label><select id="f-sit"><option value="Incorporado">Incorporado</option><option value="Desincorporado">Desincorporado</option></select></div>
+  </div>
+  <div class="msec">Situação Operacional & Componentes</div>
+  <div class="fg">
+    <div class="fi"><label>Status</label><select id="f-status"><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Em Manutenção</option></select></div>
+    <div class="fi"><label>Local / Destinação Atual</label><input type="text" id="f-local"></div>
+    <div class="fi"><label>Destinação Formal</label><input type="text" id="f-dest"></div>
+    <div class="fi"><label>Pneus (%)</label><select id="f-pneus" class="pct-sel"></select></div>
+    <div class="fi"><label>Pastilhas (%)</label><select id="f-past" class="pct-sel"></select></div>
+    <div class="fi"><label>Data Troca Pastilhas</label><input type="date" id="f-dtpast"></div>
+    <div class="fi"><label>Duração Pastilhas (meses)</label><input type="number" id="f-durpast" value="12" min="1" max="60"></div>
+  </div>
+  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-cad')">Cancelar</button><button class="btn btn-cy" onclick="salvarCad()">💾 Salvar Viatura</button></div>
+</div></div>
+
+<div class="ov" id="ov-edit"><div class="modal modal-lg">
+  <div class="modal-top"><div><div class="m-title">Editar Viatura</div><div class="m-sub" id="edit-sub">—</div></div><div class="btn-x" onclick="closeOv('ov-edit')">✕</div></div>
+  <div class="msec">Situação Operacional</div>
+  <div class="fg">
+    <div class="fi"><label>Status</label><select id="e-status"><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Em Manutenção</option></select></div>
+    <div class="fi"><label>Local</label><input type="text" id="e-local"></div>
+    <div class="fi"><label>Destinação</label><input type="text" id="e-dest"></div>
+    <div class="fi"><label>Pneus (%)</label><select id="e-pneus" class="pct-sel"></select></div>
+    <div class="fi"><label>Pastilhas (%)</label><select id="e-past" class="pct-sel"></select></div>
+    <div class="fi"><label>Data Troca Pastilhas</label><input type="date" id="e-dtpast"></div>
+    <div class="fi"><label>Duração Pastilhas (meses)</label><input type="number" id="e-durpast" value="12"></div>
+  </div>
+  <div class="msec">Quilometragem & Revisão</div>
+  <div class="fg fg4">
+    <div class="fi"><label>KM Atual</label><input type="number" id="e-km" oninput="calcR('e')"></div>
+    <div class="fi"><label>Intervalo Revisão</label><select id="e-int" onchange="calcR('e')"><option value="5000">5.000 km</option><option value="10000">10.000 km</option></select></div>
+    <div class="fi"><label>KM Próxima Rev.</label><input type="number" id="e-kmrev" readonly style="opacity:.5"></div>
+    <div class="fi"><label>Data Última Revisão</label><input type="date" id="e-dtrev"></div>
+  </div>
+  <div class="fg">
+    <div class="fi"><label>Data Próxima Revisão</label><input type="date" id="e-dtprev"></div>
+  </div>
+  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-edit')">Cancelar</button><button class="btn btn-cy" onclick="salvarEdit()">💾 Salvar Alterações</button></div>
+</div></div>
+
+<div class="ov" id="ov-os"><div class="modal modal-lg">
+  <div class="modal-top"><div><div class="m-title" id="os-modal-title">Nova OS Prima</div><div class="m-sub">Ordem de Serviço</div></div><div class="btn-x" onclick="closeOv('ov-os')">✕</div></div>
+  <div class="msec">Identificação da OS</div>
+  <div class="fg fg3">
+    <div class="fi"><label>Nº da OS</label><input type="text" id="os-num" placeholder="OS-2026-001"></div>
+    <div class="fi"><label>Data da OS</label><input type="date" id="os-data"></div>
+    <div class="fi"><label>Status da OS</label><select id="os-status">
+      <option value="AGUARDANDO ENVIAR VTR">Aguardando Enviar VTR</option>
+      <option value="AGUARDANDO ORÇAMENTO">Aguardando Orçamento</option>
+      <option value="REAVALIAÇÃO">Reavaliação</option>
+      <option value="AGUARDANDO APROVAÇÃO">Aguardando Aprovação</option>
+      <option value="APROVADA">Aprovada</option>
+    </select></div>
+  </div>
+  <div class="msec">Veículo</div>
+  <div class="fg fg3">
+    <div class="fi"><label>Placa / Viatura</label><select id="os-vtr-sel" onchange="preencherVtrOs()"><option value="">Selecionar viatura...</option></select></div>
+    <div class="fi"><label>Prefixo (automático)</label><input type="text" id="os-pref" readonly style="opacity:.6"></div>
+    <div class="fi"><label>Marca / Modelo (automático)</label><input type="text" id="os-modelo" readonly style="opacity:.6"></div>
+  </div>
+  <div class="fg">
+    <div class="fi"><label>Local da OS (Oficina/Destino)</label><input type="text" id="os-local" placeholder="Ex: Oficina Central BMO"></div>
+    <div class="fi"><label>Observações</label><input type="text" id="os-obs" placeholder="Descrição adicional..."></div>
+  </div>
+  <div class="msec">Serviços Solicitados</div>
+  <div class="serv-checks" id="serv-checks"></div>
+  <div class="fi" style="margin-top:10px"><label>Outros Serviços (campo livre)</label><input type="text" id="os-outros" placeholder="Descreva outros serviços não listados..."></div>
+  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-os')">Cancelar</button><button class="btn btn-cy" onclick="salvarOs()">💾 Salvar OS</button></div>
+</div></div>
+
+<div class="ov" id="ov-past"><div class="modal modal-sm">
+  <div class="modal-top"><div><div class="m-title">🔩 Registrar Troca de Pastilhas</div><div class="m-sub" id="past-modal-sub">Nova troca</div></div><div class="btn-x" onclick="closeOv('ov-past')">✕</div></div>
+  <div class="fg fg1 fg">
+    <div class="fi"><label>Viatura</label><select id="past-vtr-sel"><option value="">Selecionar viatura...</option></select></div>
+    <div class="fi"><label>Data da Troca</label><input type="date" id="past-data"></div>
+    <div class="fi"><label>Duração Estimada (meses)</label><input type="number" id="past-dur" value="12" min="1" max="60"></div>
+    <div class="fi"><label>% Atual das Pastilhas</label><select id="past-pct" class="pct-sel"></select></div>
+    <div class="fi"><label>Observações (marca, tipo...)</label><input type="text" id="past-obs" placeholder="Ex: Bosch Blue, Orgânica..."></div>
+  </div>
+  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-past')">Cancelar</button><button class="btn btn-cy" onclick="salvarPast()">✅ Registrar Troca</button></div>
+</div></div>
+
+<div class="ov" id="ov-pneu"><div class="modal modal-sm">
+  <div class="modal-top"><div><div class="m-title">Pneu em Estoque</div><div class="m-sub">Cadastrar item no estoque</div></div><div class="btn-x" onclick="closeOv('ov-pneu')">✕</div></div>
+  <div class="fg">
+    <div class="fi"><label>Marca</label><input type="text" id="p-marca"></div>
+    <div class="fi"><label>Modelo</label><input type="text" id="p-mod"></div>
+    <div class="fi"><label>Medida</label><input type="text" id="p-med" placeholder="205/55 R16"></div>
+    <div class="fi"><label>Aro</label><input type="text" id="p-aro"></div>
+    <div class="fi fu"><label>Para Viatura / Modelo Compatível</label><input type="text" id="p-vtr"></div>
+    <div class="fi"><label>Quantidade em Estoque</label><input type="number" id="p-qty" min="0"></div>
+  </div>
+  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-pneu')">Cancelar</button><button class="btn btn-cy" onclick="salvarPneu()">💾 Salvar</button></div>
+</div></div>
+
+<div class="ov" id="ov-km"><div class="modal">
+  <div class="modal-top"><div><div class="m-title">📍 Atualização Diária de KM</div><div class="m-sub" id="km-dt">—</div></div><div class="btn-x" onclick="closeOv('ov-km')">✕</div></div>
+  <div class="kml" id="kml"></div>
+  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-km')">Cancelar</button><button class="btn btn-cy" onclick="salvarKm()">💾 Salvar Todos KM</button></div>
+</div></div>
+
+<div class="ov" id="ov-rpt"><div class="modal" style="width:640px">
+  <div class="modal-top"><div><div class="m-title">📄 Gerar Relatório</div><div class="m-sub">Escolha tipo e formato de exportação</div></div><div class="btn-x" onclick="closeOv('ov-rpt')">✕</div></div>
+  <div class="msec">Filtros</div>
+  <div class="rpt-filters">
+    <div class="fi"><label>Status</label><select id="rpt-fst" class="flt" style="width:100%"><option value="">Todos</option><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Manutenção</option></select></div>
+    <div class="fi"><label>Tipo</label><select id="rpt-ftp" class="flt" style="width:100%"><option value="">Todos</option><option value="VPC">VPC</option><option value="VPI">VPI</option><option value="VAAD">VAAD</option><option value="VTP">VTP</option><option value="VMC">VMC</option><option value="VSO">VSO</option><option value="VSV">VSV</option></select></div>
+    <div class="fi"><label>OS Prima</label><select id="rpt-fos" class="flt" style="width:100%"><option value="">Todas</option><option value="com">Com OS</option><option value="sem">Sem OS</option></select></div>
+  </div>
+  <div class="msec">Relatórios Disponíveis</div>
+  <div class="rpt-grid">
+    <div class="rpt-card"><div class="rpt-icon">🚔</div><div class="rpt-name">Viaturas</div><div class="rpt-desc">Frota completa com KM,<br>revisões, datas e componentes</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('vtr','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('vtr','xlsx')">📊 Excel</span></div></div>
+    <div class="rpt-card"><div class="rpt-icon">⚠️</div><div class="rpt-name">Revisões</div><div class="rpt-desc">Vencidas, próximas,<br>datas e KM restante</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('rev','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('rev','xlsx')">📊 Excel</span></div></div>
+    <div class="rpt-card"><div class="rpt-icon">📋</div><div class="rpt-name">OS Prima</div><div class="rpt-desc">Abertas e realizadas<br>com detalhes completos</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('os','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('os','xlsx')">📊 Excel</span></div></div>
+    <div class="rpt-card"><div class="rpt-icon">🔩</div><div class="rpt-name">Pastilhas</div><div class="rpt-desc">Status, data de troca<br>e próxima substituição</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('past','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('past','xlsx')">📊 Excel</span></div></div>
+    <div class="rpt-card"><div class="rpt-icon">🔧</div><div class="rpt-name">Pneus</div><div class="rpt-desc">Inventário do<br>estoque de pneus</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('pneu','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('pneu','xlsx')">📊 Excel</span></div></div>
+    <div class="rpt-card" style="grid-column:1/-1"><div class="rpt-icon">📦</div><div class="rpt-name">Relatório Geral Consolidado</div><div class="rpt-desc">Tudo em um documento: viaturas, revisões, OS, pastilhas e pneus</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('geral','pdf')">📥 PDF Completo</span><span class="rfmt xls" onclick="gerarRelatorio('geral','xlsx')">📊 Excel Multi-aba</span></div></div>
+  </div>
+</div></div>
+<script>
+// ══════ CONSTANTS ══════════════════════════════════════════════
+const SERVICOS_LIST=['Troca de óleo e filtros','Revisão de freios','Troca de pastilhas de freio','Alinhamento e balanceamento','Troca de pneus','Revisão de suspensão','Manutenção elétrica/eletrônica','Troca de correia dentada','Revisão de câmbio/transmissão','Revisão geral preventiva','Sistema de ar condicionado','Funilaria e pintura','Vidros e retrovisores','Revisão periódica programada','Outros serviços'];
+
+const D0=[
+  {id:1,pref:'111031',tomb:'03600252091',tipo:'VAAD - APOIO ADMINISTRATIVO',marca:'RENAULT',modelo:'KWID',versao:'INTENS 10MT',trans:'MANUAL',anofab:2019,anomod:2020,placa:'OVQ1398',km:76927,kmrev:81617,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:80,past:80,sit:'Incorporado'},
+  {id:2,pref:'441869',tomb:'',tipo:'Veículo',marca:'LANDER',modelo:'',versao:'',trans:'',anofab:2019,anomod:2020,placa:'PAL0741',km:23456,kmrev:30450,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
+  {id:3,pref:'441870',tomb:'',tipo:'Veículo',marca:'LANDER',modelo:'',versao:'',trans:'',anofab:2019,anomod:2020,placa:'PAL0843',km:28194,kmrev:31331,iv:5000,status:'BAIXADA',os:'',local:'',dest:'',pneus:50,past:50,sit:'Incorporado'},
+  {id:4,pref:'441871',tomb:'',tipo:'Veículo',marca:'LANDER',modelo:'',versao:'',trans:'',anofab:2019,anomod:2020,placa:'PAL0726',km:27415,kmrev:30600,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
+  {id:5,pref:'441872',tomb:'',tipo:'Veículo',marca:'LANDER',modelo:'',versao:'',trans:'',anofab:2019,anomod:2020,placa:'PAL0732',km:35192,kmrev:38900,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:60,past:60,sit:'Incorporado'},
+  {id:6,pref:'442017',tomb:'',tipo:'Veículo',marca:'LANDER',modelo:'',versao:'',trans:'',anofab:2019,anomod:2020,placa:'REII604',km:27530,kmrev:30555,iv:5000,status:'BAIXADA',os:'',local:'',dest:'',pneus:40,past:40,sit:'Incorporado'},
+  {id:7,pref:'442018',tomb:'',tipo:'Veículo',marca:'LANDER',modelo:'',versao:'',trans:'',anofab:2019,anomod:2020,placa:'REII191',km:34179,kmrev:37300,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
+  {id:8,pref:'442019',tomb:'',tipo:'Veículo',marca:'LANDER',modelo:'',versao:'',trans:'',anofab:2019,anomod:2020,placa:'REII277',km:24108,kmrev:28000,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:80,past:80,sit:'Incorporado'},
+  {id:9,pref:'442020',tomb:'',tipo:'Veículo',marca:'LANDER',modelo:'',versao:'',trans:'',anofab:2019,anomod:2020,placa:'REII277B',km:46254,kmrev:50000,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:60,past:60,sit:'Incorporado'},
+  {id:10,pref:'55017',tomb:'',tipo:'Veículo',marca:'FIAT',modelo:'FIESTA SEDAN',versao:'1.6FLEX',trans:'',anofab:2009,anomod:2009,placa:'JHES261',km:90640,kmrev:0,iv:10000,status:'BAIXADA',os:'',local:'',dest:'',pneus:20,past:20,sit:'Desincorporado'},
+  {id:11,pref:'552681',tomb:'03600178087',tipo:'VPC - PATRULHA E CERCO',marca:'MITSUBISHI',modelo:'PAJERO',versao:'DAKAR D',trans:'MANUAL',anofab:2012,anomod:2013,placa:'JDX6668',km:207935,kmrev:210000,iv:10000,status:'BAIXADA',os:'',local:'',dest:'',pneus:10,past:10,sit:'Desincorporado'},
+  {id:12,pref:'552944',tomb:'',tipo:'Veículo',marca:'FIAT',modelo:'DUCATO',versao:'',trans:'',anofab:2012,anomod:2012,placa:'JDX1925',km:23166,kmrev:0,iv:10000,status:'BAIXADA',os:'',local:'',dest:'',pneus:30,past:30,sit:'Desincorporado'},
+  {id:13,pref:'553402',tomb:'03600227815',tipo:'VPI - PATRULHA E INTERCEPTAÇÃO',marca:'TOYOTA',modelo:'COROLLA',versao:'XEI10FLEX',trans:'AUTOMATICA',anofab:2017,anomod:2017,placa:'PBA7810',km:208375,kmrev:210466,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
+  {id:14,pref:'553403',tomb:'03600227819',tipo:'VPI - PATRULHA E INTERCEPTAÇÃO',marca:'TOYOTA',modelo:'COROLLA',versao:'XEI10FLEX',trans:'AUTOMATICA',anofab:2017,anomod:2017,placa:'PBA7818',km:177428,kmrev:179933,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
+  {id:15,pref:'553404',tomb:'03600227791',tipo:'VPI - PATRULHA E INTERCEPTAÇÃO',marca:'TOYOTA',modelo:'COROLLA',versao:'XEI10FLEX',trans:'AUTOMATICA',anofab:2017,anomod:2017,placa:'PBA7865',km:146021,kmrev:150000,iv:5000,status:'BAIXADA',os:'AGUARDANDO ORÇAMENTO',local:'Oficina',dest:'',pneus:30,past:30,sit:'Incorporado'},
+  {id:16,pref:'553455',tomb:'03600227752',tipo:'VPI - PATRULHA E INTERCEPTAÇÃO',marca:'TOYOTA',modelo:'COROLLA',versao:'XEI10FLEX',trans:'AUTOMATICA',anofab:2017,anomod:2017,placa:'PBF4771',km:188938,kmrev:193000,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
+  {id:17,pref:'553541',tomb:'03600236090',tipo:'VPI - PATRULHA E INTERCEPTAÇÃO',marca:'TOYOTA',modelo:'COROLLA',versao:'XEI10FLEX',trans:'AUTOMATICA',anofab:2017,anomod:2018,placa:'PBF4111',km:127958,kmrev:135183,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:80,past:80,sit:'Incorporado'},
+  {id:18,pref:'553614',tomb:'03600242716',tipo:'VPI - PATRULHA E INTERCEPTAÇÃO',marca:'TOYOTA',modelo:'COROLLA',versao:'XEI10FLEX',trans:'AUTOMATICA',anofab:2017,anomod:2018,placa:'PBJ7585',km:193274,kmrev:195000,iv:5000,status:'EM CONDIÇÃO',os:'APROVADA',local:'',dest:'',pneus:60,past:60,sit:'Incorporado'},
+  {id:19,pref:'553614B',tomb:'03600237391',tipo:'VPC - PATRULHA E CERCO',marca:'MITSUBISHI',modelo:'ASX',versao:'2.0 CVT FLEX',trans:'AUTOMATICA',anofab:2018,anomod:2018,placa:'PBG6065',km:200539,kmrev:207547,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:60,past:60,sit:'Incorporado'},
+  {id:20,pref:'553665',tomb:'03600237227',tipo:'VPC - PATRULHA E CERCO',marca:'MITSUBISHI',modelo:'ASX',versao:'2.0 CVT FLEX',trans:'AUTOMATICA',anofab:2018,anomod:2018,placa:'PBG6B23',km:249155,kmrev:250767,iv:5000,status:'BAIXADA',os:'AGUARDANDO ENVIAR VTR',local:'Pátio',dest:'',pneus:20,past:20,sit:'Incorporado'},
+  {id:21,pref:'553791',tomb:'03600237487',tipo:'VPC - PATRULHA E CERCO',marca:'MITSUBISHI',modelo:'ASX',versao:'2.0 CVT FLEX',trans:'AUTOMATICA',anofab:2018,anomod:2018,placa:'PBG6332',km:218201,kmrev:216867,iv:5000,status:'BAIXADA',os:'REAVALIAÇÃO',local:'Oficina',dest:'',pneus:20,past:20,sit:'Incorporado'},
+  {id:22,pref:'553791B',tomb:'03600237646',tipo:'VPC - PATRULHA E CERCO',marca:'MITSUBISHI',modelo:'ASX',versao:'2.0 CVT FLEX',trans:'AUTOMATICA',anofab:2018,anomod:2018,placa:'PBG8275',km:192842,kmrev:195000,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
+  {id:23,pref:'55380',tomb:'03600175188',tipo:'VTP - TRANSPORTE DE PESSOAS',marca:'MARCOPOLO',modelo:'VOLARE W9',versao:'ON',trans:'MANUAL',anofab:2012,anomod:2012,placa:'JJU1539',km:47454,kmrev:54272,iv:10000,status:'BAIXADA',os:'',local:'',dest:'',pneus:40,past:40,sit:'Incorporado'},
+  {id:24,pref:'554272',tomb:'03600275693',tipo:'VTP - TRANSPORTE DE PESSOAS',marca:'RENAULT',modelo:'MASTER',versao:'VITRE PACK LUXO',trans:'MANUAL',anofab:2020,anomod:2021,placa:'REQ6F52',km:53888,kmrev:61841,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:80,past:80,sit:'Incorporado'},
+  {id:25,pref:'554350',tomb:'03600284556',tipo:'VMC - VIATURAS MISSÕES CRÍTICAS',marca:'GENERAL MOTORS',modelo:'TRAILBLAZER',versao:'LT D4A',trans:'AUTOMATICA',anofab:2023,anomod:2023,placa:'SGT6F78',km:72255,kmrev:80665,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:90,past:90,sit:'Incorporado'},
+  {id:26,pref:'554417',tomb:'03600291071',tipo:'VSO - SUPORTE OPERACIONAL',marca:'MITSUBISHI',modelo:'L200',versao:'TRITON SPORT GLS',trans:'AUTOMATICA',anofab:2023,anomod:2023,placa:'SGV6D42',km:83365,kmrev:79830,iv:5000,status:'MANUTENÇÃO',os:'AGUARDANDO APROVAÇÃO',local:'Oficina',dest:'',pneus:80,past:80,sit:'Incorporado'},
+  {id:27,pref:'554522',tomb:'02000198859',tipo:'VSO - SUPORTE OPERACIONAL',marca:'MITSUBISHI',modelo:'L200',versao:'TRITON 3.2',trans:'AUTOMATICA',anofab:2024,anomod:2024,placa:'SGY9G05',km:70780,kmrev:75000,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:90,past:90,sit:'Incorporado'},
+  {id:28,pref:'554571',tomb:'03600310714',tipo:'VPI - PATRULHA E INTERCEPTAÇÃO',marca:'GENERAL MOTORS',modelo:'TRAILBLAZER',versao:'LT D4A',trans:'AUTOMATICA',anofab:2024,anomod:2025,placa:'PAV3I10',km:10020,kmrev:17000,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:100,past:100,sit:'Incorporado'},
+  {id:29,pref:'554647',tomb:'03600313845',tipo:'VPC - PATRULHA E CERCO',marca:'TOYOTA',modelo:'COROLLA CROSS',versao:'XR 2.0',trans:'AUTOMATICA',anofab:2025,anomod:2026,placa:'PBH4361',km:13969,kmrev:20785,iv:10000,status:'BAIXADA',os:'',local:'',dest:'',pneus:80,past:80,sit:'Incorporado'},
+  {id:30,pref:'554648',tomb:'03600313838',tipo:'VPC - PATRULHA E CERCO',marca:'TOYOTA',modelo:'COROLLA CROSS',versao:'XR 2.0',trans:'AUTOMATICA',anofab:2025,anomod:2026,placa:'PBH6B57',km:10675,kmrev:20000,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:100,past:100,sit:'Incorporado'},
+  {id:31,pref:'554649',tomb:'03600313840',tipo:'VPC - PATRULHA E CERCO',marca:'TOYOTA',modelo:'COROLLA CROSS',versao:'XR 2.0',trans:'AUTOMATICA',anofab:2025,anomod:2026,placa:'OZN3D54',km:16566,kmrev:20000,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:100,past:100,sit:'Incorporado'},
+  {id:32,pref:'554755',tomb:'03600321120',tipo:'VPC - PATRULHA E CERCO',marca:'TOYOTA',modelo:'COROLLA CROSS',versao:'XR 2.0',trans:'AUTOMATICA',anofab:2025,anomod:2026,placa:'PAO0E59',km:4140,kmrev:5000,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:100,past:100,sit:'Incorporado'},
+  {id:33,pref:'554776',tomb:'03600324993',tipo:'VPC - PATRULHA E CERCO',marca:'TOYOTA',modelo:'COROLLA CROSS',versao:'XR 2.0',trans:'AUTOMATICA',anofab:2025,anomod:2026,placa:'UIX6C01',km:826,kmrev:5000,iv:5000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:100,past:100,sit:'Incorporado'},
+  {id:34,pref:'554778',tomb:'03600324995',tipo:'VPC - PATRULHA E CERCO',marca:'TOYOTA',modelo:'COROLLA CROSS',versao:'XR 2.0',trans:'AUTOMATICA',anofab:2025,anomod:2026,placa:'UIX6B78',km:0,kmrev:10000,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:100,past:100,sit:'Incorporado'},
+  {id:35,pref:'559233',tomb:'03600230944',tipo:'VSV - SERVIÇO VELADO',marca:'TOYOTA',modelo:'ETIOS',versao:'XS 15 MT',trans:'MANUAL',anofab:2017,anomod:2018,placa:'PBE4777',km:148337,kmrev:171732,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:60,past:60,sit:'Incorporado'},
+  {id:36,pref:'559386',tomb:'03600273206',tipo:'VSV - SERVIÇO VELADO',marca:'FORD',modelo:'KA',versao:'FSL AT 1.5 HAC',trans:'',anofab:2020,anomod:2021,placa:'REN3A57',km:91817,kmrev:100000,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
+];
+
+let vtr=JSON.parse(localStorage.getItem('scv_vtr')||JSON.stringify(D0));
+let pneus=JSON.parse(localStorage.getItem('scv_pneu')||'[]');
+let ordens=JSON.parse(localStorage.getItem('scv_os')||'[]');
+let editId=null,editPneuI=null,editOsIdx=null;
+
+function save(){
+  localStorage.setItem('scv_vtr',JSON.stringify(vtr));
+  localStorage.setItem('scv_pneu',JSON.stringify(pneus));
+  localStorage.setItem('scv_os',JSON.stringify(ordens));
+}
+
+// ══════ UTILS ══════════════════════════════════════════════════
+function fmtDt(d){if(!d)return'—';try{const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;}catch{return d||'—';}}
+function diffMeses(d1,d2){if(!d1||!d2)return null;const a=new Date(d1),b=new Date(d2);return Math.round((b-a)/(1000*60*60*24*30.44));}
+function addMeses(d,m){if(!d||!m)return'';const dt=new Date(d);dt.setMonth(dt.getMonth()+parseInt(m));return dt.toISOString().split('T')[0];}
+function hoje(){return new Date().toISOString().split('T')[0];}
+function dataBR(){return new Date().toLocaleDateString('pt-BR');}
+function dateTimeStr(){return new Date().toLocaleString('pt-BR');}
+function fillPct(){const o=Array.from({length:11},(_,i)=>`<option value="${i*10}">${i*10}%</option>`).join('');document.querySelectorAll('.pct-sel').forEach(s=>s.innerHTML=o);}
+fillPct();
+function calcR(p){const km=parseInt(document.getElementById(p+'-km').value)||0;const iv=parseInt(document.getElementById(p+'-int').value)||5000;document.getElementById(p+'-kmrev').value=km+iv;}
+
+// ══════ NAV ════════════════════════════════════════════════════
+function goTo(p,el){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
+  document.getElementById('p-'+p).classList.add('on');
+  if(el)el.classList.add('on');
+  const t={dash:'Dashboard',vtr:'Viaturas',os:'OS Prima Abertas','os-hist':'OS Realizadas',pastilhas:'Pastilhas',pneus:'Estoque Pneus'};
+  document.getElementById('tbt').textContent=t[p]||p;
+  const btn=document.getElementById('topbtn');
+  const bmap={dash:'openCad()',vtr:'openCad()',os:'openOsModal()','os-hist':'openOsModal()',pastilhas:'openPastModal()',pneus:'openPneu()'};
+  const blbl={dash:'+ Nova Viatura',vtr:'+ Nova Viatura',os:'+ Nova OS','os-hist':'+ Nova OS',pastilhas:'🔩 Registrar Troca',pneus:'+ Pneu'};
+  btn.setAttribute('onclick',bmap[p]||'openCad()');btn.textContent=blbl[p]||'+ Novo';
+  if(p==='dash')renderDash();
+  if(p==='vtr'){renderVtr();setTimeout(syncTopScrollbar,100);}
+  if(p==='os')renderOs();
+  if(p==='os-hist')renderOsHist();
+  if(p==='pastilhas')renderPastilhas();
+  if(p==='pneus')renderPneus();
+}
+function openOv(id){document.getElementById(id).classList.add('open');}
+function closeOv(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// ══════ DASHBOARD ══════════════════════════════════════════════
+function renderDash(){
+  const n=vtr.length,em=vtr.filter(v=>v.status==='EM CONDIÇÃO').length,bx=vtr.filter(v=>v.status==='BAIXADA').length,mn=vtr.filter(v=>v.status==='MANUTENÇÃO').length;
+  const osAb=ordens.filter(o=>o.statusOs!=='ENTREGUE').length;
+  const rv=vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length,rp=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)<=500&&v.km<=v.kmrev).length;
+  document.getElementById('badge').textContent=bx+mn;
+  document.getElementById('badge-os').textContent=osAb;
+  document.getElementById('sg').innerHTML=`
+    <div class="sc c-wh"><div class="sc-gl" style="background:#7a8ba0"></div><div class="sc-lb">Frota Total</div><div class="sc-vl">${n}</div><div class="sc-sb">Viaturas cadastradas</div></div>
+    <div class="sc c-gn"><div class="sc-gl"></div><div class="sc-lb">Em Condição</div><div class="sc-vl">${em}</div><div class="sc-sb">Disponíveis</div><div class="sc-tr">${Math.round(em/(n||1)*100)}%</div></div>
+    <div class="sc c-rd"><div class="sc-gl"></div><div class="sc-lb">Baixadas</div><div class="sc-vl">${bx}</div><div class="sc-sb">Fora de operação</div><div class="sc-tr">${Math.round(bx/(n||1)*100)}%</div></div>
+    <div class="sc c-am"><div class="sc-gl"></div><div class="sc-lb">Manutenção</div><div class="sc-vl">${mn}</div><div class="sc-sb">Em oficina</div></div>
+    <div class="sc c-or"><div class="sc-gl"></div><div class="sc-lb">OS Abertas</div><div class="sc-vl">${osAb}</div><div class="sc-sb">Em processo</div></div>
+    <div class="sc c-am"><div class="sc-gl"></div><div class="sc-lb">Rev. Urgente</div><div class="sc-vl">${rv+rp}</div><div class="sc-sb">${rv} vencida / ${rp} próxima</div></div>`;
+  renderDonut(em,bx,mn,n);renderBar();renderAlerts();renderRevChart();renderOsChart();
+}
+
+function renderDonut(em,bx,mn,tot){
+  const t=tot||1,cx=60,cy=60,r=46,sw=13,c=2*Math.PI*r;
+  const data=[{v:em,col:'#00e676'},{v:bx,col:'#ff3d57'},{v:mn,col:'#ffb300'}];
+  let off=0,paths='';
+  data.forEach(d=>{const dash=d.v/t*c,gap=c-dash;paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.col}" stroke-width="${sw}" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;off+=dash;});
+  document.getElementById('donut').innerHTML=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1a2130" stroke-width="${sw}"/>${paths}<text x="${cx}" y="${cy-5}" text-anchor="middle" font-family="'Barlow Condensed'" font-size="22" font-weight="800" fill="#e8edf5">${Math.round(em/t*100)}%</text><text x="${cx}" y="${cy+11}" text-anchor="middle" font-family="'JetBrains Mono'" font-size="8" fill="#7a8ba0" letter-spacing="1">ATIVAS</text>`;
+  document.getElementById('dleg').innerHTML=[{l:'Em Condição',v:em,c:'#00e676'},{l:'Baixadas',v:bx,c:'#ff3d57'},{l:'Manutenção',v:mn,c:'#ffb300'}].map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.c}"></div><span class="dl-lbl">${d.l}</span><span class="dl-val">${d.v}</span><span class="dl-pct">${Math.round(d.v/t*100)}%</span></div>`).join('');
+  document.getElementById('dob-s').textContent=`${tot} total`;
+}
+
+function renderBar(){
+  const map={};vtr.forEach(v=>{const t=v.tipo.split(' - ')[0]||'Outro';map[t]=(map[t]||0)+1;});
+  const ent=Object.entries(map).sort((a,b)=>b[1]-a[1]),mx=Math.max(...ent.map(e=>e[1]),1);
+  const cols=['#00e5ff','#00e676','#ffb300','#ff6d00','#ff3d57','#a78bfa','#34d399'];
+  document.getElementById('bar-c').innerHTML=ent.map(([t,c],i)=>`<div class="or"><span class="or-lb">${t}</span><div class="or-tr"><div class="or-fl" style="width:${Math.round(c/mx*100)}%;background:${cols[i%cols.length]}"></div></div><span class="or-n">${c}</span><span class="or-p">${Math.round(c/vtr.length*100)}%</span></div>`).join('');
+  document.getElementById('dob-t').textContent=`${ent.length} tipos`;
+}
+
+function renderAlerts(){
+  const al=[];
+  vtr.forEach(v=>{
+    if(v.kmrev>0&&v.km>v.kmrev)al.push({col:'#ff3d57',t:`Revisão vencida — faltam ${(v.km-v.kmrev).toLocaleString()} km`,pl:v.placa,s:`${v.marca} ${v.modelo}`});
+    else if(v.kmrev>0&&(v.kmrev-v.km)<=500&&v.km<=v.kmrev)al.push({col:'#ffb300',t:`Revisão em ${(v.kmrev-v.km).toLocaleString()} km`,pl:v.placa,s:`${v.marca} ${v.modelo}`});
+    if(v.pneus<=20)al.push({col:'#ffb300',t:`Pneus críticos — ${v.pneus}%`,pl:v.placa,s:`${v.marca} ${v.modelo}`});
+    if(v.past<=20)al.push({col:'#ff3d57',t:`Pastilhas críticas — ${v.past}%`,pl:v.placa,s:`${v.marca} ${v.modelo}`});
+    if(v.dtpast&&v.durpast){const prx=addMeses(v.dtpast,v.durpast);if(prx&&prx<=hoje())al.push({col:'#ff3d57',t:`Troca de pastilha vencida`,pl:v.placa,s:`Prev: ${fmtDt(prx)}`});}
+  });
+  document.getElementById('dob-al').textContent=al.length;
+  const el=document.getElementById('al-list');
+  if(!al.length){el.innerHTML='<div class="empty-c"><span>✅</span>Sem alertas ativos</div>';return;}
+  el.innerHTML=al.slice(0,8).map(a=>`<div class="al-it"><div class="al-d" style="background:${a.col}"></div><div class="al-b"><div class="al-tt"><span class="al-pl">${a.pl}</span>${a.t}</div><div class="al-sb">${a.s}</div></div></div>`).join('');
+}
+
+function renderRevChart(){
+  const ok=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)>500).length;
+  const prx=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)<=500&&v.km<=v.kmrev).length;
+  const vc=vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length;
+  const nd=vtr.filter(v=>!v.kmrev||v.kmrev<=0).length;
+  const t=vtr.length||1;
+  document.getElementById('rev-c').innerHTML=[{l:'Em dia',v:ok,c:'#00e676'},{l:'Próxima (≤500km)',v:prx,c:'#ffb300'},{l:'Vencida',v:vc,c:'#ff3d57'},{l:'Sem revisão cadastrada',v:nd,c:'#3a4a5a'}].map(r=>`<div class="or"><span class="or-lb" style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:${r.c};flex-shrink:0;display:inline-block"></span>${r.l}</span><div class="or-tr"><div class="or-fl" style="width:${Math.round(r.v/t*100)}%;background:${r.c}"></div></div><span class="or-n">${r.v}</span></div>`).join('');
+}
+
+function renderOsChart(){
+  const sts=['AGUARDANDO ENVIAR VTR','AGUARDANDO ORÇAMENTO','REAVALIAÇÃO','AGUARDANDO APROVAÇÃO','APROVADA'];
+  const map={};sts.forEach(s=>map[s]=0);
+  ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(map[o.statusOs]!==undefined)map[o.statusOs]++;});
+  const tot=Math.max(ordens.filter(o=>o.statusOs!=='ENTREGUE').length,1);
+  const cols=['#00e5ff','#ffb300','#ff6d00','#ff3d57','#00e676'];
+  document.getElementById('dob-os').textContent=ordens.filter(o=>o.statusOs!=='ENTREGUE').length;
+  document.getElementById('os-c').innerHTML=Object.entries(map).map(([l,v],i)=>`<div class="or"><span class="or-lb" style="font-size:10px">${l}</span><div class="or-tr"><div class="or-fl" style="width:${v?Math.round(v/tot*100):0}%;background:${cols[i]}"></div></div><span class="or-n">${v}</span></div>`).join('');
+}
+
+// ══════ VIATURAS ═══════════════════════════════════════════════
+function renderVtr(){
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const fs=document.getElementById('fst').value,ft=document.getElementById('ftp').value;
+  let f=vtr.filter(v=>
+    (!q||(v.placa.toLowerCase().includes(q)||v.modelo.toLowerCase().includes(q)||v.pref.includes(q)||v.marca.toLowerCase().includes(q)))&&
+    (!fs||v.status===fs)&&(!ft||v.tipo.includes(ft))
+  );
+  document.getElementById('vtr-cnt').textContent=`${f.length} / ${vtr.length}`;
+  const osMap={};
+  ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(!osMap[o.placa])osMap[o.placa]=[];osMap[o.placa].push(o.statusOs);});
+  const tb=document.getElementById('tbody');
+  if(!f.length){tb.innerHTML='<tr><td colspan="16"><div class="empty-c"><span>🔍</span>Nenhuma viatura encontrada</div></td></tr>';return;}
+  tb.innerHTML=f.map((v,i)=>{
+    const d=v.kmrev>0?v.kmrev-v.km:null;
+    let kc='ok',kt='—';
+    if(d!==null){kt=d<0?`⚠ −${Math.abs(d).toLocaleString()} km`:d<=500?`≈${d.toLocaleString()} km`:`+${d.toLocaleString()} km`;kc=d<0?'er':d<=500?'wa':'ok';}
+    const pc=v.pneus<=20?'pf-r':v.pneus<=50?'pf-y':'pf-g';
+    const bc=v.past<=20?'pf-r':v.past<=50?'pf-y':'pf-g';
+    const sc=v.status==='EM CONDIÇÃO'?'p-on':v.status==='BAIXADA'?'p-bx':'p-mn';
+    const sl=v.status==='EM CONDIÇÃO'?'ATIVA':v.status==='BAIXADA'?'BAIXADA':'MANUT.';
+    const tp=(v.tipo.split(' - ')[0]||v.tipo).substring(0,4);
+    const osV=osMap[v.placa];
+    const osHtml=osV&&osV.length?`<span class="op">${osV[0]}</span>`:'<span style="color:var(--txt3);font-size:10px">—</span>';
+    return `<tr>
+      <td style="color:var(--txt3);font-family:var(--mono);font-size:10px">${i+1}</td>
+      <td><span class="placa">${v.placa}</span></td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${v.pref||'—'}</td>
+      <td><span class="ttag">${tp}</span></td>
+      <td style="font-size:12px;font-weight:600;min-width:140px">${v.marca}<br><span style="color:var(--txt2);font-size:11px;font-weight:400">${v.modelo}</span></td>
+      <td class="km-m" style="font-weight:700">${v.km.toLocaleString()} km</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${fmtDt(v.dtrev)}</td>
+      <td class="km-m">${v.kmrev>0?v.kmrev.toLocaleString()+' km':'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${fmtDt(v.dtprev)}</td>
+      <td class="km-m ${kc}">${kt}</td>
+      <td><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${v.pneus}%</span></div></td>
+      <td><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${v.past}%</span></div></td>
+      <td><span class="pill ${sc}">${sl}</span></td>
+      <td>${osHtml}</td>
+      <td style="font-size:11px;color:var(--txt2);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.local||'—'}</td>
+      <td><div class="acts"><button class="btn btn-sm" style="background:transparent;border-color:var(--border)" onclick="openEdit(${v.id})">✏</button><button class="btn btn-sm btn-rd" onclick="excluir(${v.id})">🗑</button></div></td>
+    </tr>`;
+  }).join('');
+  setTimeout(syncTopScrollbar,50);
+}
+
+// ══════ OS ═════════════════════════════════════════════════════
+const OS_STATUS_COL={'AGUARDANDO ENVIAR VTR':'#00e5ff','AGUARDANDO ORÇAMENTO':'#ffb300','REAVALIAÇÃO':'#ff6d00','AGUARDANDO APROVAÇÃO':'#ff3d57','APROVADA':'#00e676','ENTREGUE':'#00e676'};
+
+function osCard(o,idx,hist){
+  const col=OS_STATUS_COL[o.statusOs]||'#7a8ba0';
+  const servs=(o.servicos||[]);
+  return `<div class="os-card" style="border-top:3px solid ${col}">
+    <div class="os-card-top">
+      <div class="os-head-left">
+        <div class="os-num">📋 OS Nº ${o.numOs||'—'}</div>
+        <div class="os-date">Data: ${fmtDt(o.dataOs)}${o.dtEntrega?' · Entregue: '+fmtDt(o.dtEntrega):''}</div>
+      </div>
+      <span class="pill" style="background:${col}22;color:${col};border:1px solid ${col}44">${o.statusOs}</span>
+    </div>
+    <div class="os-info-grid">
+      <div class="os-field"><div class="os-field-lbl">Veículo / Placa</div><div class="os-field-val"><span class="placa" style="font-size:10px">${o.placa}</span></div></div>
+      <div class="os-field"><div class="os-field-lbl">Prefixo</div><div class="os-field-val">${o.prefixo||'—'}</div></div>
+      <div class="os-field"><div class="os-field-lbl">Modelo</div><div class="os-field-val" style="font-size:11px">${o.modelo||'—'}</div></div>
+      <div class="os-field"><div class="os-field-lbl">Local / Oficina</div><div class="os-field-val">${o.local||'—'}</div></div>
+      <div class="os-field" style="grid-column:2/-1"><div class="os-field-lbl">Observações</div><div class="os-field-val" style="font-size:11px">${o.obs||'—'}</div></div>
+    </div>
+    ${servs.length?`<div class="os-servicos">${servs.map(s=>`<span class="os-serv-tag">⚙ ${s}</span>`).join('')}</div>`:''}
+    <div class="os-actions">
+      ${!hist?`<button class="btn btn-sm btn-gr" onclick="entregarOs(${idx})">✅ Marcar Entregue</button>`:'<span class="pill p-on">✅ ENTREGUE</span>'}
+      <button class="btn btn-sm" style="background:transparent;border-color:var(--border)" onclick="editarOs(${idx})">✏ Editar</button>
+      <button class="btn btn-sm btn-rd" onclick="excluirOs(${idx})">🗑 Excluir</button>
+    </div>
+  </div>`;
+}
+
+function renderOs(){
+  const q=(document.getElementById('os-srch').value||'').toLowerCase();
+  const fs=document.getElementById('os-fst').value;
+  const abertas=ordens.map((o,i)=>({...o,_i:i})).filter(o=>o.statusOs!=='ENTREGUE');
+  const f=abertas.filter(o=>
+    (!q||(o.placa.toLowerCase().includes(q)||(o.numOs||'').toLowerCase().includes(q)||(o.modelo||'').toLowerCase().includes(q)))&&
+    (!fs||o.statusOs===fs)
+  );
+  document.getElementById('os-cnt').textContent=`${f.length} OS`;
+  document.getElementById('badge-os').textContent=abertas.length;
+  const el=document.getElementById('os-list');
+  if(!f.length){el.innerHTML='<div class="empty-c" style="grid-column:1/-1"><span>📋</span>Nenhuma OS aberta</div>';return;}
+  el.innerHTML=f.map(o=>osCard(o,o._i,false)).join('');
+}
+
+function renderOsHist(){
+  const q=(document.getElementById('osh-srch').value||'').toLowerCase();
+  const hist=ordens.map((o,i)=>({...o,_i:i})).filter(o=>o.statusOs==='ENTREGUE');
+  const f=hist.filter(o=>(!q||(o.placa.toLowerCase().includes(q)||(o.numOs||'').toLowerCase().includes(q))));
+  document.getElementById('os-hist-cnt').textContent=`${f.length} OS realizadas`;
+  const el=document.getElementById('os-hist-list');
+  if(!f.length){el.innerHTML='<div class="empty-c" style="grid-column:1/-1"><span>✅</span>Nenhuma OS realizada ainda</div>';return;}
+  el.innerHTML=f.map(o=>osCard(o,o._i,true)).join('');
+}
+
+function openOsModal(idx){
+  editOsIdx=(idx!==undefined)?idx:null;
+  document.getElementById('os-modal-title').textContent=editOsIdx!==null?'Editar OS Prima':'Nova OS Prima';
+  const sel=document.getElementById('os-vtr-sel');
+  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.placa} — ${v.marca} ${v.modelo} (${v.pref})</option>`).join('');
+  document.getElementById('serv-checks').innerHTML=SERVICOS_LIST.map((s,i)=>`<label class="serv-chk"><input type="checkbox" id="serv-${i}" value="${s}"> ${s}</label>`).join('');
+  if(editOsIdx!==null){
+    const o=ordens[editOsIdx];
+    document.getElementById('os-num').value=o.numOs||'';
+    document.getElementById('os-data').value=o.dataOs||'';
+    document.getElementById('os-status').value=o.statusOs||'';
+    document.getElementById('os-local').value=o.local||'';
+    document.getElementById('os-obs').value=o.obs||'';
+    document.getElementById('os-outros').value=o.outros||'';
+    const vFound=vtr.find(v=>v.placa===o.placa);
+    if(vFound){sel.value=vFound.id;preencherVtrOs();}
+    (o.servicos||[]).forEach(s=>{SERVICOS_LIST.forEach((sl,i)=>{if(sl===s){const cb=document.getElementById('serv-'+i);if(cb)cb.checked=true;}});});
+  } else {
+    ['os-num','os-local','os-obs','os-outros','os-pref','os-modelo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('os-data').value=hoje();
+    document.getElementById('os-status').value='AGUARDANDO ENVIAR VTR';
+  }
+  openOv('ov-os');
+}
+
+function preencherVtrOs(){
+  const v=vtr.find(x=>x.id==document.getElementById('os-vtr-sel').value);
+  document.getElementById('os-pref').value=v?v.pref:'';
+  document.getElementById('os-modelo').value=v?`${v.marca} ${v.modelo}`:'';
+}
+
+function salvarOs(){
+  const v=vtr.find(x=>x.id==document.getElementById('os-vtr-sel').value);
+  if(!v){alert('Selecione uma viatura.');return;}
+  const servs=SERVICOS_LIST.filter((s,i)=>{const cb=document.getElementById('serv-'+i);return cb&&cb.checked;});
+  const outros=document.getElementById('os-outros').value.trim();
+  if(outros)servs.push(outros);
+  const o={
+    numOs:document.getElementById('os-num').value,
+    dataOs:document.getElementById('os-data').value,
+    statusOs:document.getElementById('os-status').value,
+    placa:v.placa,prefixo:v.pref,modelo:`${v.marca} ${v.modelo}`,
+    local:document.getElementById('os-local').value,
+    obs:document.getElementById('os-obs').value,
+    outros:document.getElementById('os-outros').value,
+    servicos:servs,
+    dtEntrega:editOsIdx!==null?(ordens[editOsIdx].dtEntrega||''):''
+  };
+  if(editOsIdx!==null)ordens[editOsIdx]=o;else ordens.push(o);
+  save();closeOv('ov-os');renderOs();renderOsHist();renderDash();toast('✅ OS salva com sucesso!');
+}
+
+function entregarOs(idx){
+  if(!confirm('Marcar esta OS como Entregue/Realizada?'))return;
+  ordens[idx].statusOs='ENTREGUE';
+  ordens[idx].dtEntrega=hoje();
+  save();renderOs();renderOsHist();renderDash();toast('✅ OS marcada como entregue!');
+}
+function editarOs(idx){openOsModal(idx);}
+function excluirOs(idx){if(!confirm('Excluir esta OS?'))return;ordens.splice(idx,1);save();renderOs();renderOsHist();renderDash();}
+
+// ══════ PASTILHAS ══════════════════════════════════════════════
+function pastStatus(pct,dtpast,durpast){
+  if(dtpast&&durpast){const prx=addMeses(dtpast,durpast);if(prx&&prx<=hoje())return'CRITICO';}
+  if(pct<=20)return'CRITICO';
+  if(pct<=50)return'ALERTA';
+  return'OK';
+}
+
+function renderPastilhas(){
+  const q=(document.getElementById('past-srch').value||'').toLowerCase();
+  const fs=document.getElementById('past-fst').value;
+  let f=vtr.filter(v=>(!q||(v.placa.toLowerCase().includes(q)||(v.marca+' '+v.modelo).toLowerCase().includes(q))));
+  if(fs)f=f.filter(v=>pastStatus(v.past,v.dtpast,v.durpast)===fs);
+  f.sort((a,b)=>a.past-b.past);
+  document.getElementById('past-cnt').textContent=`${f.length} viaturas`;
+  const grid=document.getElementById('past-grid');
+  if(!f.length){grid.innerHTML='<div class="empty-c" style="grid-column:1/-1"><span>🔩</span>Nenhuma viatura encontrada</div>';return;}
+  grid.innerHTML=f.map(v=>{
+    const pst=pastStatus(v.past,v.dtpast,v.durpast);
+    const col=pst==='CRITICO'?'var(--red)':pst==='ALERTA'?'var(--amber)':'var(--green)';
+    const pfc=v.past<=20?'pf-r':v.past<=50?'pf-y':'pf-g';
+    const prxTroca=v.dtpast&&v.durpast?addMeses(v.dtpast,v.durpast):'';
+    const mesesRest=prxTroca?diffMeses(hoje(),prxTroca):null;
+    const tempUsado=v.dtpast?diffMeses(v.dtpast,hoje()):null;
+    const alertaMsg=pst==='CRITICO'?'⚠ TROCA URGENTE NECESSÁRIA':pst==='ALERTA'?'⚠ Atenção — desgaste elevado':'✓ Pastilhas em boas condições';
+    const mText=mesesRest!==null?(mesesRest<=0?`Vencida há ${Math.abs(mesesRest)} meses`:`${mesesRest} meses restantes`):'—';
+    const mColor=mesesRest===null?'var(--txt)':mesesRest<=0?'var(--red)':mesesRest<=2?'var(--amber)':'var(--green)';
+    return `<div class="past-card" style="border-top:3px solid ${col}">
+      <div class="past-card-top">
+        <div>
+          <span class="past-placa">${v.placa}</span>
+          <div class="past-modelo">${v.marca} ${v.modelo}</div>
+          <div class="past-tipo">${v.tipo.split(' - ')[0]||v.tipo} · Pref: ${v.pref}</div>
+        </div>
+        <div class="past-pct-box">
+          <div class="past-pct-val" style="color:${col}">${v.past}%</div>
+          <div class="past-pct-lbl">VIDA ÚTIL</div>
+        </div>
+      </div>
+      <div class="past-bar"><div class="past-bar-fill ${pfc}" style="width:${v.past}%"></div></div>
+      <div class="past-info-grid">
+        <div class="past-info-item"><div class="past-info-lbl">📅 Data da Troca</div><div class="past-info-val">${fmtDt(v.dtpast)}</div></div>
+        <div class="past-info-item"><div class="past-info-lbl">⏱ Duração Prevista</div><div class="past-info-val">${v.durpast?v.durpast+' meses':'—'}</div></div>
+        <div class="past-info-item"><div class="past-info-lbl">🔄 Tempo em Uso</div><div class="past-info-val">${tempUsado!==null?tempUsado+' meses':'—'}</div></div>
+        <div class="past-info-item"><div class="past-info-lbl">🔔 Próxima Troca</div><div class="past-info-val" style="color:${pst==='CRITICO'?'var(--red)':pst==='ALERTA'?'var(--amber)':'var(--txt)'}">${fmtDt(prxTroca)}</div></div>
+        <div class="past-info-item" style="grid-column:1/-1"><div class="past-info-lbl">📊 Tempo Restante</div><div class="past-info-val" style="color:${mColor}">${mText}</div></div>
+      </div>
+      <div class="past-alerta" style="background:${pst==='CRITICO'?'rgba(255,61,87,.1)':pst==='ALERTA'?'rgba(255,179,0,.1)':'rgba(0,230,118,.1)'};color:${col}">${alertaMsg}</div>
+      <div class="past-actions">
+        <button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="openPastModalVtr(${v.id})">🔩 Registrar Troca</button>
+        <button class="btn btn-sm" style="background:transparent;border-color:var(--border)" onclick="openEdit(${v.id})">✏</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openPastModal(){
+  document.getElementById('past-modal-sub').textContent='Registrar nova troca de pastilhas';
+  const sel=document.getElementById('past-vtr-sel');
+  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.placa} — ${v.marca} ${v.modelo}</option>`).join('');
+  document.getElementById('past-data').value=hoje();
+  document.getElementById('past-dur').value='12';
+  document.getElementById('past-pct').value='100';
+  document.getElementById('past-obs').value='';
+  openOv('ov-past');
+}
+function openPastModalVtr(vId){
+  openPastModal();
+  document.getElementById('past-vtr-sel').value=vId;
+  const v=vtr.find(x=>x.id==vId);
+  if(v)document.getElementById('past-modal-sub').textContent=`${v.placa} — ${v.marca} ${v.modelo}`;
+}
+function salvarPast(){
+  const v=vtr.find(x=>x.id==document.getElementById('past-vtr-sel').value);
+  if(!v){alert('Selecione uma viatura.');return;}
+  v.dtpast=document.getElementById('past-data').value;
+  v.durpast=parseInt(document.getElementById('past-dur').value)||12;
+  v.past=parseInt(document.getElementById('past-pct').value)||100;
+  save();closeOv('ov-past');renderPastilhas();renderDash();toast('🔩 Troca de pastilha registrada!');
+}
+
+// ══════ PNEUS ══════════════════════════════════════════════════
+function renderPneus(){
+  document.getElementById('pneu-cnt').textContent=`${pneus.length} itens`;
+  const g=document.getElementById('pneu-grid');
+  if(!pneus.length){g.innerHTML='<div class="empty-c" style="grid-column:1/-1"><span>🔧</span>Estoque vazio</div>';return;}
+  g.innerHTML=pneus.map((p,i)=>`<div class="pc"><div class="pc-h"><div><div class="pc-brand">${p.marca}</div><div class="pc-mod">${p.mod}</div></div><div class="qty-b"><div class="qty-n">${p.qty}</div><div class="qty-l">UNID.</div></div></div><div class="pc-tags"><span class="tag">⭕ Aro ${p.aro}</span><span class="tag">📐 ${p.med}</span><span class="tag">🚔 ${p.vtr}</span></div><div style="display:flex;gap:6px"><button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="editPneu(${i})">✏ Editar</button><button class="btn btn-sm btn-rd" onclick="delPneu(${i})">🗑</button></div></div>`).join('');
+}
+function openPneu(){editPneuI=null;['p-marca','p-mod','p-med','p-aro','p-vtr','p-qty'].forEach(id=>document.getElementById(id).value='');openOv('ov-pneu');}
+function salvarPneu(){const p={marca:document.getElementById('p-marca').value,mod:document.getElementById('p-mod').value,med:document.getElementById('p-med').value,aro:document.getElementById('p-aro').value,vtr:document.getElementById('p-vtr').value,qty:parseInt(document.getElementById('p-qty').value)||0};if(!p.marca){alert('Informe a marca.');return;}if(editPneuI!==null){pneus[editPneuI]=p;editPneuI=null;}else pneus.push(p);save();closeOv('ov-pneu');renderPneus();toast('✅ Pneu salvo!');}
+function editPneu(i){editPneuI=i;const p=pneus[i];['marca','mod','med','aro','vtr','qty'].forEach(k=>{document.getElementById('p-'+k).value=p[k]||'';});openOv('ov-pneu');}
+function delPneu(i){if(!confirm('Excluir?'))return;pneus.splice(i,1);save();renderPneus();}
+
+// ══════ CRUD VIATURA ═══════════════════════════════════════════
+function openCad(){
+  editId=null;
+  document.getElementById('cad-title').textContent='Nova Viatura';
+  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-km','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-status').value='EM CONDIÇÃO';
+  document.getElementById('f-pneus').value='100';
+  document.getElementById('f-past').value='100';
+  document.getElementById('f-int').value='5000';
+  document.getElementById('f-trans').value='AUTOMATICA';
+  document.getElementById('f-sit').value='Incorporado';
+  document.getElementById('f-durpast').value='12';
+  openOv('ov-cad');
+}
+function salvarCad(){
+  const km=parseInt(document.getElementById('f-km').value)||0;
+  const iv=parseInt(document.getElementById('f-int').value)||5000;
+  const kmrev=parseInt(document.getElementById('f-kmrev').value)||(km+iv);
+  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,sit:document.getElementById('f-sit').value};
+  if(!v.placa){alert('Informe a placa.');return;}
+  if(editId){const i=vtr.findIndex(x=>x.id===editId);if(i>=0)vtr[i]=v;}else vtr.push(v);
+  save();closeOv('ov-cad');renderVtr();renderDash();toast('✅ Viatura salva!');
+}
+function openEdit(id){
+  const v=vtr.find(x=>x.id===id);if(!v)return;editId=id;
+  document.getElementById('edit-sub').textContent=`${v.marca} ${v.modelo} · ${v.placa}`;
+  document.getElementById('e-status').value=v.status;
+  document.getElementById('e-local').value=v.local||'';
+  document.getElementById('e-dest').value=v.dest||'';
+  document.getElementById('e-pneus').value=v.pneus;
+  document.getElementById('e-past').value=v.past;
+  document.getElementById('e-km').value=v.km;
+  document.getElementById('e-kmrev').value=v.kmrev;
+  document.getElementById('e-int').value=v.iv;
+  document.getElementById('e-dtrev').value=v.dtrev||'';
+  document.getElementById('e-dtprev').value=v.dtprev||'';
+  document.getElementById('e-dtpast').value=v.dtpast||'';
+  document.getElementById('e-durpast').value=v.durpast||12;
+  openOv('ov-edit');
+}
+function salvarEdit(){
+  const v=vtr.find(x=>x.id===editId);if(!v)return;
+  v.status=document.getElementById('e-status').value;
+  v.local=document.getElementById('e-local').value;
+  v.dest=document.getElementById('e-dest').value;
+  v.pneus=parseInt(document.getElementById('e-pneus').value)||0;
+  v.past=parseInt(document.getElementById('e-past').value)||0;
+  v.km=parseInt(document.getElementById('e-km').value)||0;
+  v.iv=parseInt(document.getElementById('e-int').value)||5000;
+  v.kmrev=parseInt(document.getElementById('e-kmrev').value)||0;
+  v.dtrev=document.getElementById('e-dtrev').value;
+  v.dtprev=document.getElementById('e-dtprev').value;
+  v.dtpast=document.getElementById('e-dtpast').value;
+  v.durpast=parseInt(document.getElementById('e-durpast').value)||12;
+  save();closeOv('ov-edit');renderVtr();renderDash();renderPastilhas();toast('✅ Viatura atualizada!');
+}
+function excluir(id){if(!confirm('Excluir esta viatura?'))return;vtr=vtr.filter(x=>x.id!==id);save();renderVtr();renderDash();}
+
+// ══════ KM MODAL ═══════════════════════════════════════════════
+function openKmModal(){
+  document.getElementById('km-dt').textContent='Data: '+new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('kml').innerHTML=vtr.filter(v=>v.status!=='BAIXADA').map(v=>`<div class="kmr"><span class="kmr-p">${v.placa}</span><span class="kmr-n">${v.marca} ${v.modelo}</span><span class="kmr-c">Atual: ${v.km.toLocaleString()}</span><input type="number" id="km-${v.id}" value="${v.km}" min="0"></div>`).join('');
+  openOv('ov-km');
+}
+function salvarKm(){
+  vtr.forEach(v=>{const inp=document.getElementById('km-'+v.id);if(!inp)return;const nv=parseInt(inp.value)||v.km;if(nv>=v.km){if(v.kmrev>0&&nv>v.kmrev)v.kmrev=nv+v.iv;v.km=nv;}});
+  save();closeOv('ov-km');renderVtr();renderDash();toast('✅ KM atualizado!');
+}
+
+// ══════ RELATÓRIOS ═════════════════════════════════════════════
+function openRelatorio(){openOv('ov-rpt');}
+function getFiltrados(){
+  const fs=document.getElementById('rpt-fst').value,ft=document.getElementById('rpt-ftp').value,fo=document.getElementById('rpt-fos').value;
+  return vtr.filter(v=>(!fs||v.status===fs)&&(!ft||v.tipo.includes(ft))&&(!fo||(fo==='com'?!!v.os:!v.os)));
+}
+
+function exportXLSX(tipo){
+  const {utils,writeFile}=XLSX;const wb=utils.book_new();const data=getFiltrados();
+  if(tipo==='vtr'||tipo==='geral'){
+    const rows=data.map((v,i)=>{const d=v.kmrev>0?v.kmrev-v.km:null;const rs=v.kmrev>0?(d<0?'VENCIDA':d<=500?'PRÓXIMA':'EM DIA'):'—';return{'#':i+1,'Placa':v.placa,'Prefixo':v.pref,'Tipo':v.tipo.split(' - ')[0]||v.tipo,'Marca':v.marca,'Modelo':v.modelo,'KM Atual':v.km,'Data Últ.Revisão':fmtDt(v.dtrev),'KM Próx.Revisão':v.kmrev||0,'Data Próx.Revisão':fmtDt(v.dtprev),'KM Restante':d!==null?d:0,'Status Revisão':rs,'Pneus%':v.pneus,'Pastilhas%':v.past,'Status':v.status,'Local':v.local||'—'};});
+    const ws=utils.json_to_sheet(rows);ws['!cols']=[{wch:4},{wch:10},{wch:10},{wch:8},{wch:12},{wch:16},{wch:10},{wch:14},{wch:14},{wch:14},{wch:12},{wch:14},{wch:9},{wch:10},{wch:14},{wch:16}];utils.book_append_sheet(wb,ws,'Viaturas');
+  }
+  if(tipo==='rev'||tipo==='geral'){
+    const rows=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{'Placa':v.placa,'Marca/Modelo':v.marca+' '+v.modelo,'Status':v.status,'KM Atual':v.km,'Data Últ.Rev.':fmtDt(v.dtrev),'KM Próx.Rev.':v.kmrev||0,'Data Próx.Rev.':fmtDt(v.dtprev),'KM Restante':d!==null?d:0,'Status Rev.':v.kmrev>0?(d<0?'VENCIDA':d<=500?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>a['KM Restante']-b['KM Restante']);
+    const ws=utils.json_to_sheet(rows);ws['!cols']=[{wch:10},{wch:22},{wch:14},{wch:10},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12}];utils.book_append_sheet(wb,ws,'Revisões');
+  }
+  if(tipo==='os'||tipo==='geral'){
+    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE').map((o,i)=>({'#':i+1,'Nº OS':o.numOs,'Data OS':fmtDt(o.dataOs),'Placa':o.placa,'Prefixo':o.prefixo,'Modelo':o.modelo,'Status':o.statusOs,'Local':o.local,'Serviços':(o.servicos||[]).join(', '),'Observações':o.obs||''}));
+    const ws=utils.json_to_sheet(ab.length?ab:[{Info:'Sem OS abertas'}]);utils.book_append_sheet(wb,ws,'OS Abertas');
+    const en=ordens.filter(o=>o.statusOs==='ENTREGUE').map((o,i)=>({'#':i+1,'Nº OS':o.numOs,'Data OS':fmtDt(o.dataOs),'Data Entrega':fmtDt(o.dtEntrega),'Placa':o.placa,'Modelo':o.modelo,'Serviços':(o.servicos||[]).join(', ')}));
+    const ws2=utils.json_to_sheet(en.length?en:[{Info:'Sem OS realizadas'}]);utils.book_append_sheet(wb,ws2,'OS Realizadas');
+  }
+  if(tipo==='past'||tipo==='geral'){
+    const rows=vtr.map(v=>{const prx=v.dtpast&&v.durpast?addMeses(v.dtpast,v.durpast):'';const mr=prx?diffMeses(hoje(),prx):null;return{'Placa':v.placa,'Prefixo':v.pref,'Marca/Modelo':v.marca+' '+v.modelo,'Pastilhas%':v.past,'Data Troca':fmtDt(v.dtpast),'Duração(meses)':v.durpast||'—','Próxima Troca':fmtDt(prx),'Meses Restantes':mr!==null?mr:'—','Status':pastStatus(v.past,v.dtpast,v.durpast)};});
+    const ws=utils.json_to_sheet(rows);utils.book_append_sheet(wb,ws,'Pastilhas');
+  }
+  if(tipo==='pneu'||tipo==='geral'){
+    const rows=pneus.map((p,i)=>({'#':i+1,'Marca':p.marca,'Modelo':p.mod,'Medida':p.med,'Aro':p.aro,'Para Viatura':p.vtr,'Qtd':p.qty}));
+    const ws=utils.json_to_sheet(rows.length?rows:[{Info:'Estoque vazio'}]);utils.book_append_sheet(wb,ws,'Estoque Pneus');
+  }
+  if(tipo==='geral'){
+    const rs=[{'Indicador':'Total Frota','Valor':vtr.length},{'Indicador':'Em Condição','Valor':vtr.filter(v=>v.status==='EM CONDIÇÃO').length},{'Indicador':'Baixadas','Valor':vtr.filter(v=>v.status==='BAIXADA').length},{'Indicador':'Manutenção','Valor':vtr.filter(v=>v.status==='MANUTENÇÃO').length},{'Indicador':'OS Abertas','Valor':ordens.filter(o=>o.statusOs!=='ENTREGUE').length},{'Indicador':'OS Realizadas','Valor':ordens.filter(o=>o.statusOs==='ENTREGUE').length},{'Indicador':'Rev. Vencida','Valor':vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length},{'Indicador':'Pneus em Estoque','Valor':pneus.length},{'Indicador':'Data Relatório','Valor':dateTimeStr()}];
+    const ws=utils.json_to_sheet(rs);utils.book_append_sheet(wb,ws,'Resumo');
+  }
+  const nm={'vtr':'viaturas','rev':'revisoes','os':'os','past':'pastilhas','pneu':'pneus','geral':'relatorio_geral'};
+  writeFile(wb,`SCV_16BPM_${nm[tipo]}_${dataBR().replace(/\//g,'-')}.xlsx`);
+  toast('✅ Excel gerado!');
+}
+
+function exportPDF(tipo){
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});const W=doc.internal.pageSize.getWidth();const data=getFiltrados();
+  function addH(t,s){doc.setFillColor(13,17,23);doc.rect(0,0,W,22,'F');doc.setFillColor(0,229,255);doc.rect(0,0,3,22,'F');doc.setTextColor(0,229,255);doc.setFontSize(7);doc.setFont('helvetica','bold');doc.text('16ª BPM · PMDF · SCV',8,8);doc.setTextColor(232,237,245);doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text(t,8,16);doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(122,139,160);doc.text(s,8,21);doc.text('Emitido: '+dateTimeStr(),W-8,21,{align:'right'});}
+  function addFt(){const p=doc.internal.getNumberOfPages();for(let i=1;i<=p;i++){doc.setPage(i);const H=doc.internal.pageSize.getHeight();doc.setFillColor(13,17,23);doc.rect(0,H-8,W,8,'F');doc.setTextColor(58,74,90);doc.setFontSize(6);doc.setFont('helvetica','normal');doc.text('16ª BPM · SCV · '+dataBR(),8,H-2.5);doc.text('Pág '+i+'/'+p,W-8,H-2.5,{align:'right'});}}
+  const ts={headStyles:{fillColor:[19,25,32],textColor:[0,229,255],fontStyle:'bold',fontSize:7,lineWidth:0.1,lineColor:[42,47,61]},bodyStyles:{fillColor:[13,17,23],textColor:[232,237,245],fontSize:7,lineWidth:0.1,lineColor:[26,33,48]},alternateRowStyles:{fillColor:[19,25,32]},margin:{top:27,bottom:12}};
+
+  if(tipo==='vtr'){
+    addH('RELATÓRIO DE VIATURAS',data.length+' viatura(s)');
+    doc.autoTable({...ts,head:[['#','Placa','Pref.','Tipo','Marca/Modelo','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Rest.','Pneus','Past.','Status','Local']],body:data.map((v,i)=>{const d=v.kmrev>0?v.kmrev-v.km:null;const rs=v.kmrev>0?(d<0?'VENC':d<=500?'PROX':'OK'):'—';return[i+1,v.placa,v.pref,v.tipo.split(' - ')[0],v.marca+' '+v.modelo,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),d!==null?(d>=0?'+'+d.toLocaleString():d.toLocaleString()):'—',v.pneus+'%',v.past+'%',v.status,v.local||'—'];}),didDrawCell:d=>{if(d.section==='body'&&d.column.index===12){if(d.cell.raw==='EM CONDIÇÃO')d.cell.styles.textColor=[0,230,118];else if(d.cell.raw==='BAIXADA')d.cell.styles.textColor=[255,61,87];else d.cell.styles.textColor=[255,179,0];}}});
+  }else if(tipo==='rev'){
+    addH('RELATÓRIO DE REVISÕES',data.length+' viatura(s)');
+    const rd=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{...v,d:d,rs:v.kmrev>0?(d<0?'VENCIDA':d<=500?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>(a.d||999999)-(b.d||999999));
+    doc.autoTable({...ts,head:[['#','Placa','Marca/Modelo','Status','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Restante','Status Rev.']],body:rd.map((v,i)=>[i+1,v.placa,v.marca+' '+v.modelo,v.status,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),v.d!==null?(v.d>=0?'+'+v.d.toLocaleString():v.d.toLocaleString()):'—',v.rs]),didDrawCell:d=>{if(d.section==='body'&&d.column.index===9){if(d.cell.raw==='VENCIDA')d.cell.styles.textColor=[255,61,87];else if(d.cell.raw==='PRÓXIMA')d.cell.styles.textColor=[255,179,0];else if(d.cell.raw==='EM DIA')d.cell.styles.textColor=[0,230,118];}}});
+  }else if(tipo==='os'){
+    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE');
+    addH('OS PRIMA ABERTAS',ab.length+' OS em aberto');
+    if(!ab.length)doc.text('Nenhuma OS aberta.',W/2,50,{align:'center'});
+    else doc.autoTable({...ts,head:[['Nº OS','Data','Placa','Prefixo','Modelo','Status','Local','Serviços']],body:ab.map(o=>[o.numOs,fmtDt(o.dataOs),o.placa,o.prefixo,o.modelo,o.statusOs,o.local,(o.servicos||[]).join(', ')])});
+    doc.addPage();addH('OS PRIMA REALIZADAS',ordens.filter(o=>o.statusOs==='ENTREGUE').length+' OS entregues');
+    const en=ordens.filter(o=>o.statusOs==='ENTREGUE');
+    if(!en.length)doc.text('Nenhuma OS realizada.',W/2,50,{align:'center'});
+    else doc.autoTable({...ts,head:[['Nº OS','Data OS','Data Entrega','Placa','Modelo','Serviços']],body:en.map(o=>[o.numOs,fmtDt(o.dataOs),fmtDt(o.dtEntrega),o.placa,o.modelo,(o.servicos||[]).join(', ')])});
+  }else if(tipo==='past'){
+    addH('RELATÓRIO DE PASTILHAS',vtr.length+' viaturas');
+    doc.autoTable({...ts,head:[['Placa','Pref.','Marca/Modelo','Past.%','Data Troca','Dur.(meses)','Próx.Troca','Meses Rest.','Status']],body:vtr.map(v=>{const prx=v.dtpast&&v.durpast?addMeses(v.dtpast,v.durpast):'';const mr=prx?diffMeses(hoje(),prx):null;const st=pastStatus(v.past,v.dtpast,v.durpast);return[v.placa,v.pref,v.marca+' '+v.modelo,v.past+'%',fmtDt(v.dtpast),v.durpast?v.durpast+'m':'—',fmtDt(prx),mr!==null?mr:'—',st];}),didDrawCell:d=>{if(d.section==='body'&&d.column.index===8){if(d.cell.raw==='CRITICO')d.cell.styles.textColor=[255,61,87];else if(d.cell.raw==='ALERTA')d.cell.styles.textColor=[255,179,0];else d.cell.styles.textColor=[0,230,118];}}});
+  }else if(tipo==='pneu'){
+    addH('ESTOQUE DE PNEUS',pneus.length+' item(ns)');
+    if(!pneus.length)doc.text('Estoque vazio.',W/2,50,{align:'center'});
+    else doc.autoTable({...ts,head:[['#','Marca','Modelo','Medida','Aro','Para Viatura','Qtd']],body:pneus.map((p,i)=>[i+1,p.marca,p.mod,p.med,p.aro,p.vtr,p.qty])});
+  }else if(tipo==='geral'){
+    const em=vtr.filter(v=>v.status==='EM CONDIÇÃO').length,bx=vtr.filter(v=>v.status==='BAIXADA').length,mn=vtr.filter(v=>v.status==='MANUTENÇÃO').length;
+    addH('RELATÓRIO GERAL CONSOLIDADO','Frota: '+vtr.length+' · OS: '+ordens.length+' · Pneus: '+pneus.length+' itens');
+    const H=doc.internal.pageSize.getHeight();
+    [{l:'Em Condição',v:em,c:[0,230,118]},{l:'Baixadas',v:bx,c:[255,61,87]},{l:'Manutenção',v:mn,c:[255,179,0]},{l:'OS Abertas',v:ordens.filter(o=>o.statusOs!=='ENTREGUE').length,c:[255,109,0]},{l:'Rev.Vencida',v:vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length,c:[255,61,87]},{l:'Total Frota',v:vtr.length,c:[0,229,255]}].forEach((b,i)=>{const bx0=8+i*45,by=28;doc.setFillColor(19,25,32);doc.roundedRect(bx0,by,42,16,2,2,'F');doc.setFillColor(...b.c);doc.roundedRect(bx0,by,2,16,1,1,'F');doc.setTextColor(...b.c);doc.setFontSize(16);doc.setFont('helvetica','bold');doc.text(String(b.v),bx0+21+1,by+10,{align:'center'});doc.setTextColor(122,139,160);doc.setFontSize(6);doc.setFont('helvetica','normal');doc.text(b.l,bx0+21+1,by+14.5,{align:'center'});});
+    doc.autoTable({...ts,startY:50,head:[['#','Placa','Tipo','Marca/Modelo','KM Atual','Data Últ.Rev.','KM Próx.','Data Próx.Rev.','KM Rest.','Past.%','Status']],body:data.map((v,i)=>{const d=v.kmrev>0?v.kmrev-v.km:null;return[i+1,v.placa,v.tipo.split(' - ')[0],v.marca+' '+v.modelo,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),d!==null?(d>=0?'+'+d.toLocaleString():d.toLocaleString()):'—',v.past+'%',v.status];})});
+    doc.addPage();addH('OS & PASTILHAS','Ordens de Serviço e Controle de Pastilhas');
+    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE');
+    doc.autoTable({...ts,head:[['Nº OS','Data','Placa','Modelo','Status OS','Serviços']],body:ab.length?ab.map(o=>[o.numOs,fmtDt(o.dataOs),o.placa,o.modelo,o.statusOs,(o.servicos||[]).join(', ')]):[['—','—','—','Sem OS abertas','—','—']]});
+    doc.autoTable({...ts,head:[['Placa','Marca/Modelo','Past.%','Data Troca','Próx.Troca','Meses Rest.','Status']],body:vtr.map(v=>{const prx=v.dtpast&&v.durpast?addMeses(v.dtpast,v.durpast):'';return[v.placa,v.marca+' '+v.modelo,v.past+'%',fmtDt(v.dtpast),fmtDt(prx),prx?diffMeses(hoje(),prx):'—',pastStatus(v.past,v.dtpast,v.durpast)];})});
+  }
+  addFt();
+  const nm={'vtr':'viaturas','rev':'revisoes','os':'os','past':'pastilhas','pneu':'pneus','geral':'relatorio_geral'};
+  doc.save('SCV_16BPM_'+nm[tipo]+'_'+dataBR().replace(/\//g,'-')+'.pdf');
+  toast('✅ PDF gerado!');
+}
+
+function gerarRelatorio(tipo,fmt){if(fmt==='xlsx')exportXLSX(tipo);else exportPDF(tipo);}
+
+// ══════ SCROLLBAR SYNC ═════════════════════════════════════════
+function syncTopScrollbar(){
+  const main=document.getElementById('tw-main'),top=document.getElementById('tw-top'),inner=document.getElementById('tw-inner');
+  if(!main||!top||!inner)return;
+  const tbl=main.querySelector('table');if(tbl)inner.style.width=tbl.scrollWidth+'px';
+  top.onscroll=()=>{main.scrollLeft=top.scrollLeft;};
+  main.onscroll=()=>{top.scrollLeft=main.scrollLeft;};
+}
+
+// ══════ TOAST ══════════════════════════════════════════════════
+function toast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:22px;right:22px;background:var(--green);color:#000;padding:11px 18px;border-radius:7px;font-weight:800;font-size:12px;z-index:9999;box-shadow:0 8px 24px rgba(0,230,118,.3);font-family:var(--font);animation:fi .3s ease';
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+
+// ══════ INIT ═══════════════════════════════════════════════════
+const ds=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+document.getElementById('sb-dt').textContent=ds;
+document.getElementById('tb-dt').textContent=ds;
+renderDash();
+renderVtr();
+setTimeout(syncTopScrollbar,300);
+</script></body></html>
