@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SCV · 16ª BPM</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -458,6 +460,21 @@ select option{background:var(--s2)}
   .tc .flt { width: auto; }
 }
 
+
+/* LOADING SPINNER */
+#db-loading { animation: fi .3s ease; }
+#db-loading div:first-child {
+  animation: spin 1s linear infinite;
+  font-size: 48px;
+  color: var(--cyan);
+}
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.db-status-dot {
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);display:inline-block;
+  margin-right:5px;animation:blink 2s infinite;
+}
+
 </style></head><body>
 
 
@@ -557,7 +574,8 @@ select option{background:var(--s2)}
 <div class="main">
   <div class="topbar">
     <div class="tb-path"><span class="tb-unit">16ª BPM</span><span class="tb-sep">/</span><span class="tb-title" id="tbt">Dashboard</span></div>
-    <div class="tb-r"><div class="tb-dt" id="tb-dt"></div><div class="tb-user" id="tb-user" onclick="logoutConfirm()"><div class="tu-dot" id="tu-dot"></div><span id="tu-name">—</span> · Sair</div>
+    <div class="tb-r"><div class="tb-dt" id="tb-dt"></div>
+      <div class="tb-dt" id="db-status" style="color:var(--txt3)">⟳ conectando</div><div class="tb-user" id="tb-user" onclick="logoutConfirm()"><div class="tu-dot" id="tu-dot"></div><span id="tu-name">—</span> · Sair</div>
       <button class="btn btn-cy" id="topbtn" onclick="openCad()">+ Nova Viatura</button></div>
   </div>
   <div class="content">
@@ -819,15 +837,107 @@ const D0=[
   {id:36,pref:'559386',tomb:'03600273206',tipo:'VSV - SERVIÇO VELADO',marca:'FORD',modelo:'KA',versao:'FSL AT 1.5 HAC',trans:'',anofab:2020,anomod:2021,placa:'REN3A57',km:91817,kmrev:100000,iv:10000,status:'EM CONDIÇÃO',os:'',local:'',dest:'',pneus:70,past:70,sit:'Incorporado'},
 ];
 
-let vtr=JSON.parse(localStorage.getItem('scv_vtr')||JSON.stringify(D0));
-let pneus=JSON.parse(localStorage.getItem('scv_pneu')||'[]');
-let ordens=JSON.parse(localStorage.getItem('scv_os')||'[]');
-let editId=null,editPneuI=null,editOsIdx=null;
+// ══════ FIREBASE CONFIG ════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDxgPRECQFklqQnQVMQOf1M79gfB1bbwoc",
+  authDomain: "banco-de-dados-1ae35.firebaseapp.com",
+  projectId: "banco-de-dados-1ae35",
+  storageBucket: "banco-de-dados-1ae35.firebasestorage.app",
+  messagingSenderId: "847679980685",
+  appId: "1:847679980685:web:53b9ba23f7591776b5cec4"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-function save(){
-  localStorage.setItem('scv_vtr',JSON.stringify(vtr));
-  localStorage.setItem('scv_pneu',JSON.stringify(pneus));
-  localStorage.setItem('scv_os',JSON.stringify(ordens));
+// ══════ DATA (in-memory, synced with Firestore) ════════════════
+let vtr = [];
+let pneus = [];
+let ordens = [];
+let editId=null,editPneuI=null,editOsIdx=null;
+let _dbLoaded = false;
+
+// ── LOADING SCREEN ─────────────────────────────────────────────
+function showLoading(msg){
+  let el = document.getElementById('db-loading');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'db-loading';
+    el.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:var(--mono)';
+    el.innerHTML = '<div style="color:var(--cyan);font-size:32px">⟳</div><div id="db-loading-msg" style="color:var(--txt2);font-size:12px;letter-spacing:2px"></div>';
+    document.body.appendChild(el);
+  }
+  document.getElementById('db-loading-msg').textContent = msg||'CARREGANDO...';
+}
+function hideLoading(){
+  const el=document.getElementById('db-loading');
+  if(el) el.remove();
+}
+
+// ── SAVE TO FIRESTORE ──────────────────────────────────────────
+async function save(){
+  try {
+    await db.collection('dados').doc('viaturas').set({lista: vtr});
+    await db.collection('dados').doc('pneus').set({lista: pneus});
+    await db.collection('dados').doc('ordens').set({lista: ordens});
+  } catch(e) {
+    console.error('Erro ao salvar:', e);
+    toast('⚠ Erro ao salvar no servidor!');
+  }
+}
+
+// ── LOAD FROM FIRESTORE ────────────────────────────────────────
+async function loadFromFirestore(){
+  showLoading('CONECTANDO AO BANCO DE DADOS...');
+  try {
+    const [vtrDoc, pneuDoc, osDoc] = await Promise.all([
+      db.collection('dados').doc('viaturas').get(),
+      db.collection('dados').doc('pneus').get(),
+      db.collection('dados').doc('ordens').get()
+    ]);
+
+    if(vtrDoc.exists && vtrDoc.data().lista && vtrDoc.data().lista.length > 0){
+      vtr = vtrDoc.data().lista;
+    } else {
+      // First time: seed with D0 data
+      vtr = JSON.parse(JSON.stringify(D0));
+      await db.collection('dados').doc('viaturas').set({lista: vtr});
+    }
+
+    pneus = pneuDoc.exists ? (pneuDoc.data().lista || []) : [];
+    ordens = osDoc.exists ? (osDoc.data().lista || []) : [];
+
+    _dbLoaded = true;
+    hideLoading();
+    const st=document.getElementById('db-status');if(st)st.innerHTML='<span class="db-status-dot"></span>online';
+    return true;
+  } catch(e) {
+    console.error('Firestore error:', e);
+    hideLoading();
+    // Fallback to D0 if offline
+    if(vtr.length === 0) vtr = JSON.parse(JSON.stringify(D0));
+    _dbLoaded = true;
+    const st2=document.getElementById('db-status');if(st2)st2.style.color='var(--amber)';
+    if(st2)st2.textContent='⚠ offline';
+    toast('⚠ Modo offline — dados locais');
+    return false;
+  }
+}
+
+// ── REALTIME LISTENER (auto-refresh when data changes) ─────────
+function startRealtimeSync(){
+  db.collection('dados').doc('viaturas').onSnapshot(snap => {
+    if(snap.exists && snap.data().lista){
+      vtr = snap.data().lista;
+      renderDash();
+      renderVtr();
+    }
+  });
+  db.collection('dados').doc('pneus').onSnapshot(snap => {
+    if(snap.exists){ pneus = snap.data().lista || []; renderPneus(); }
+  });
+  db.collection('dados').doc('ordens').onSnapshot(snap => {
+    if(snap.exists){ ordens = snap.data().lista || []; renderOs(); renderOsHist(); renderDash(); }
+  });
 }
 
 // ══════ UTILS ══════════════════════════════════════════════════
@@ -1417,10 +1527,15 @@ function aplicarAcesso(){
   document.getElementById('topbtn').style.display='';
   // remove guest banner if any
   const gb=document.getElementById('guest-banner');if(gb)gb.remove();
-  renderDash();
-  renderVtr();
   applyLayout();
   if(isMobile()){syncMobileNav('dash');renderFAB('dash');syncMobileBadges();document.getElementById('mn-more-users').style.display=sessao&&sessao.role==='admin'?'flex':'none';}
+  // Load data from Firestore after login
+  loadFromFirestore().then(ok => {
+    renderDash();
+    renderVtr();
+    setTimeout(syncTopScrollbar,300);
+    if(ok) startRealtimeSync();
+  });
 }
 
 function aplicarAcessoVisitante(){
@@ -1446,6 +1561,11 @@ function aplicarAcessoVisitante(){
     content.insertBefore(banner, content.firstChild);
   }
   applyLayout();
+  // Load data for visitor too (read-only view)
+  loadFromFirestore().then(ok => {
+    renderDash();
+    if(ok) startRealtimeSync();
+  });
   if(isMobile()){syncMobileNav('dash');renderFAB('dash');syncMobileBadges();}
   // block nav clicks for non-dash
   document.querySelectorAll('.ni').forEach(n=>{
@@ -1699,8 +1819,6 @@ function renderFAB(page){
 const ds=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
 document.getElementById('sb-dt').textContent=ds;
 document.getElementById('tb-dt').textContent=ds;
-renderDash();
-renderVtr();
-setTimeout(syncTopScrollbar,300);
 applyLayout();
+// Auth check happens first; data loads after login
 </script></body></html>
