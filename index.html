@@ -245,7 +245,81 @@ select option{background:var(--s2)}
 .serv-chk{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;font-size:12px;user-select:none}
 .serv-chk:hover{border-color:var(--border2);background:var(--s3)}
 .serv-chk input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--cyan);flex-shrink:0}
+
+/* ══ LOGIN ══════════════════════════════════════════════════ */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.login-screen.hidden{display:none}
+.login-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 40%,rgba(0,229,255,.06) 0,transparent 60%),radial-gradient(ellipse at 70% 70%,rgba(0,230,118,.04) 0,transparent 50%);pointer-events:none}
+.login-box{background:var(--s1);border:1px solid var(--border2);border-radius:16px;padding:40px 44px;width:400px;max-width:95vw;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.7);animation:ma .3s cubic-bezier(.22,1,.36,1)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .lb{font-family:var(--mono);font-size:9px;color:var(--cyan);letter-spacing:4px;text-transform:uppercase;margin-bottom:6px}
+.login-logo .lbrand{font-family:var(--cond);font-size:52px;font-weight:800;color:var(--cyan);line-height:1}
+.login-logo .lsub{font-size:11px;color:var(--txt3);margin-top:5px;letter-spacing:1px}
+.login-title{font-family:var(--cond);font-size:18px;font-weight:700;color:var(--txt);margin-bottom:20px;text-align:center}
+.login-fi{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.login-fi label{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:var(--txt3)}
+.login-fi input{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--txt);font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s;width:100%}
+.login-fi input:focus{border-color:rgba(0,229,255,.5);background:var(--s3)}
+.login-btn{width:100%;padding:13px;background:var(--cyan);color:#000;border:none;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;margin-top:8px;transition:all .15s;letter-spacing:.5px}
+.login-btn:hover{background:#00cfea;transform:translateY(-1px)}
+.login-btn:active{transform:none}
+.login-err{color:var(--red);font-family:var(--mono);font-size:11px;text-align:center;margin-top:10px;min-height:16px}
+.login-guest{text-align:center;margin-top:16px;font-size:12px;color:var(--txt3)}
+.login-guest a{color:var(--cyan);cursor:pointer;text-decoration:none}
+.login-guest a:hover{text-decoration:underline}
+.login-footer{position:absolute;bottom:24px;font-family:var(--mono);font-size:9px;color:var(--txt3);text-align:center;letter-spacing:1px}
+/* TOPBAR USER */
+.tb-user{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;color:var(--txt2);background:var(--s2);border:1px solid var(--border);padding:5px 11px;border-radius:6px;cursor:pointer;transition:all .15s}
+.tb-user:hover{border-color:var(--border2);color:var(--txt)}
+.tb-user .tu-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.tb-user .tu-dot.admin{background:var(--cyan)}
+.guest-banner{background:rgba(255,179,0,.08);border:1px solid rgba(255,179,0,.2);border-radius:8px;padding:10px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--amber)}
+.guest-banner strong{font-weight:700}
+/* ADMIN USERS MODAL */
+.user-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
+.user-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:7px}
+.user-row .ur-name{flex:1;font-size:13px;font-weight:600}
+.user-row .ur-role{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px}
+.ur-admin{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
+.ur-user{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+
 </style></head><body>
+
+<!-- TELA DE LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-bg"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="lb">16ª BPM · PMDF</div>
+      <div class="lbrand">SCV</div>
+      <div class="lsub">SISTEMA DE CONTROLE DE VIATURAS</div>
+    </div>
+    <div class="login-title">Acesso ao Sistema</div>
+    <div class="login-fi"><label>Usuário</label><input type="text" id="l-user" placeholder="Digite seu usuário" onkeydown="if(event.key==='Enter')document.getElementById('l-pass').focus()"></div>
+    <div class="login-fi"><label>Senha</label><input type="password" id="l-pass" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+    <button class="login-btn" onclick="fazerLogin()">ENTRAR</button>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-guest">ou <a onclick="entrarComoVisitante()">continuar como visitante</a> (apenas dashboard)</div>
+  </div>
+  <div class="login-footer">PMDF · 16ª BPM · Acesso Restrito</div>
+</div>
+
+<!-- MODAL GERENCIAR USUÁRIOS -->
+<div class="ov" id="ov-users"><div class="modal modal-sm">
+  <div class="modal-top"><div><div class="m-title">👥 Gerenciar Usuários</div><div class="m-sub">Cadastrar e remover acessos</div></div><div class="btn-x" onclick="closeOv('ov-users')">✕</div></div>
+  <div class="msec">Novo Usuário</div>
+  <div class="fg">
+    <div class="fi"><label>Usuário</label><input type="text" id="nu-user" placeholder="nome.sobrenome"></div>
+    <div class="fi"><label>Senha</label><input type="password" id="nu-pass" placeholder="Mínimo 4 caracteres"></div>
+    <div class="fi"><label>Nome Completo</label><input type="text" id="nu-nome" placeholder="Sd Fulano da Silva"></div>
+    <div class="fi"><label>Perfil</label><select id="nu-role"><option value="user">Usuário</option><option value="admin">Administrador</option></select></div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-top:10px;margin-bottom:18px"><button class="btn btn-cy" onclick="adicionarUsuario()">➕ Adicionar</button></div>
+  <div class="msec">Usuários Cadastrados</div>
+  <div class="user-list" id="user-list"></div>
+  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-users')">Fechar</button></div>
+</div></div>
+
 <nav class="sb">
   <div class="sb-top"><div class="sb-unit">16ª BPM · PMDF</div><div class="sb-brand">SCV</div><div class="sb-name">Sistema de Controle<br>de Viaturas</div></div>
   <div class="sb-nav">
@@ -262,13 +336,15 @@ select option{background:var(--s2)}
     <div class="ni" onclick="openOsModal()"><span class="ic">📝</span>Nova OS</div>
     <div class="ni" onclick="openPneu()"><span class="ic">📦</span>Novo Pneu</div>
     <div class="ni" onclick="openRelatorio()"><span class="ic">📄</span>Relatórios</div>
+    <div class="ni" id="ni-users" onclick="openUsers()" style="display:none"><span class="ic">👥</span>Usuários</div>
   </div>
   <div class="sb-foot"><span id="sb-dt"></span><span class="online">ATIVO</span></div>
 </nav>
 <div class="main">
   <div class="topbar">
     <div class="tb-path"><span class="tb-unit">16ª BPM</span><span class="tb-sep">/</span><span class="tb-title" id="tbt">Dashboard</span></div>
-    <div class="tb-r"><div class="tb-dt" id="tb-dt"></div><button class="btn btn-cy" id="topbtn" onclick="openCad()">+ Nova Viatura</button></div>
+    <div class="tb-r"><div class="tb-dt" id="tb-dt"></div><div class="tb-user" id="tb-user" onclick="logoutConfirm()"><div class="tu-dot" id="tu-dot"></div><span id="tu-name">—</span> · Sair</div>
+      <button class="btn btn-cy" id="topbtn" onclick="openCad()">+ Nova Viatura</button></div>
   </div>
   <div class="content">
 
@@ -1068,6 +1144,172 @@ function toast(msg){
   t.style.cssText='position:fixed;bottom:22px;right:22px;background:var(--green);color:#000;padding:11px 18px;border-radius:7px;font-weight:800;font-size:12px;z-index:9999;box-shadow:0 8px 24px rgba(0,230,118,.3);font-family:var(--font);animation:fi .3s ease';
   t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500);
 }
+
+
+// ══════ AUTH ═══════════════════════════════════════════════════
+// Admin fixo — altere aqui usuário e senha do administrador
+const ADMIN_FIXO = {user:'admin', pass:'pmdf2025', nome:'Administrador', role:'admin'};
+
+let sessao = null; // {user, nome, role} ou null
+let modoVisitante = false;
+
+function getUsuarios(){
+  const base = [ADMIN_FIXO];
+  const extra = JSON.parse(localStorage.getItem('scv_usuarios')||'[]');
+  return [...base, ...extra];
+}
+function saveUsuarios(lista){
+  // nunca salva o admin fixo na lista extra
+  const extra = lista.filter(u=>u.user!==ADMIN_FIXO.user);
+  localStorage.setItem('scv_usuarios', JSON.stringify(extra));
+}
+
+function fazerLogin(){
+  const u = document.getElementById('l-user').value.trim().toLowerCase();
+  const p = document.getElementById('l-pass').value;
+  const err = document.getElementById('login-err');
+  if(!u||!p){err.textContent='Preencha usuário e senha.';return;}
+  const lista = getUsuarios();
+  const found = lista.find(x=>x.user.toLowerCase()===u && x.pass===p);
+  if(!found){err.textContent='Usuário ou senha incorretos.';return;}
+  sessao = {user:found.user, nome:found.nome, role:found.role};
+  modoVisitante = false;
+  localStorage.setItem('scv_sessao', JSON.stringify(sessao));
+  aplicarAcesso();
+}
+
+function entrarComoVisitante(){
+  sessao = null;
+  modoVisitante = true;
+  localStorage.removeItem('scv_sessao');
+  aplicarAcessoVisitante();
+}
+
+function aplicarAcesso(){
+  document.getElementById('login-screen').classList.add('hidden');
+  // topbar user pill
+  document.getElementById('tu-name').textContent = sessao.nome;
+  document.getElementById('tu-dot').className = 'tu-dot' + (sessao.role==='admin'?' admin':'');
+  // show users menu if admin
+  document.getElementById('ni-users').style.display = sessao.role==='admin'?'flex':'none';
+  // enable all nav items
+  document.querySelectorAll('.ni').forEach(n=>n.style.opacity='1');
+  // enable topbtn
+  document.getElementById('topbtn').style.display='';
+  // remove guest banner if any
+  const gb=document.getElementById('guest-banner');if(gb)gb.remove();
+  renderDash();
+  renderVtr();
+}
+
+function aplicarAcessoVisitante(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('tu-name').textContent = 'Visitante';
+  document.getElementById('tu-dot').className = 'tu-dot';
+  document.getElementById('ni-users').style.display='none';
+  document.getElementById('topbtn').style.display='none';
+  // disable non-dash nav items visually
+  document.querySelectorAll('.ni').forEach(n=>{
+    const txt=n.textContent;
+    if(!txt.includes('Dashboard'))n.style.opacity='.35';
+  });
+  // force dashboard
+  goTo('dash', document.querySelector('.ni'));
+  // show guest banner in content
+  const content=document.querySelector('.content');
+  if(!document.getElementById('guest-banner')){
+    const banner=document.createElement('div');
+    banner.id='guest-banner';
+    banner.className='guest-banner';
+    banner.innerHTML='🔒 <strong>Acesso restrito.</strong> Você está visualizando apenas o dashboard. <a style="color:var(--cyan);cursor:pointer;margin-left:8px" onclick="voltarLogin()">Fazer login para acesso completo</a>';
+    content.insertBefore(banner, content.firstChild);
+  }
+  // block nav clicks for non-dash
+  document.querySelectorAll('.ni').forEach(n=>{
+    const orig=n.getAttribute('onclick');
+    if(orig && !orig.includes("'dash'")){
+      n.setAttribute('onclick',"if(modoVisitante){voltarLogin();return;}" + (orig||''));
+    }
+  });
+}
+
+function voltarLogin(){
+  modoVisitante=false;
+  sessao=null;
+  localStorage.removeItem('scv_sessao');
+  location.reload();
+}
+
+function logoutConfirm(){
+  if(!confirm('Deseja sair do sistema?'))return;
+  sessao=null;modoVisitante=false;
+  localStorage.removeItem('scv_sessao');
+  location.reload();
+}
+
+// ── GERENCIAR USUÁRIOS (admin) ─────────────────────────────────
+function openUsers(){
+  if(!sessao||sessao.role!=='admin'){alert('Acesso restrito.');return;}
+  renderUserList();
+  openOv('ov-users');
+}
+
+function renderUserList(){
+  const lista=getUsuarios();
+  const el=document.getElementById('user-list');
+  el.innerHTML=lista.map((u,i)=>`
+    <div class="user-row">
+      <div>
+        <div class="ur-name">${u.nome}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--txt2);margin-top:2px">@${u.user}</div>
+      </div>
+      <span class="ur-role ${u.role==='admin'?'ur-admin':'ur-user'}">${u.role==='admin'?'ADMIN':'USUÁRIO'}</span>
+      ${u.user!==ADMIN_FIXO.user?`<button class="btn btn-sm btn-rd" onclick="removerUsuario('${u.user}')">🗑</button>`:'<span style="font-family:var(--mono);font-size:9px;color:var(--txt3)">FIXO</span>'}
+    </div>`).join('');
+}
+
+function adicionarUsuario(){
+  const u=document.getElementById('nu-user').value.trim().toLowerCase();
+  const p=document.getElementById('nu-pass').value;
+  const n=document.getElementById('nu-nome').value.trim();
+  const r=document.getElementById('nu-role').value;
+  if(!u||!p||!n){alert('Preencha todos os campos.');return;}
+  if(p.length<4){alert('Senha deve ter no mínimo 4 caracteres.');return;}
+  const lista=getUsuarios();
+  if(lista.find(x=>x.user===u)){alert('Usuário já existe.');return;}
+  const extra=JSON.parse(localStorage.getItem('scv_usuarios')||'[]');
+  extra.push({user:u,pass:p,nome:n,role:r});
+  localStorage.setItem('scv_usuarios',JSON.stringify(extra));
+  ['nu-user','nu-pass','nu-nome'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nu-role').value='user';
+  renderUserList();
+  toast('✅ Usuário cadastrado!');
+}
+
+function removerUsuario(usr){
+  if(!confirm('Remover usuário '+usr+'?'))return;
+  const extra=JSON.parse(localStorage.getItem('scv_usuarios')||'[]').filter(u=>u.user!==usr);
+  localStorage.setItem('scv_usuarios',JSON.stringify(extra));
+  renderUserList();
+  toast('🗑 Usuário removido.');
+}
+
+// ── INIT AUTH ─────────────────────────────────────────────────
+(function initAuth(){
+  // check for saved session
+  const saved = localStorage.getItem('scv_sessao');
+  if(saved){
+    try{
+      sessao = JSON.parse(saved);
+      // validate still exists
+      const lista = getUsuarios();
+      const valid = lista.find(x=>x.user===sessao.user);
+      if(valid){ aplicarAcesso(); return; }
+    }catch(e){}
+  }
+  // show login
+  document.getElementById('login-screen').classList.remove('hidden');
+})();
 
 // ══════ INIT ═══════════════════════════════════════════════════
 const ds=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
