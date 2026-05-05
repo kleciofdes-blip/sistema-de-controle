@@ -534,18 +534,18 @@ select option{background:var(--s2)}
 <!-- MODAL GERENCIAR USUÁRIOS -->
 <div class="ov" id="ov-users"><div class="modal modal-sm">
   <div class="modal-top"><div><div class="m-title">👥 Gerenciar Usuários</div><div class="m-sub">Gere o código e adicione no arquivo</div></div><div class="btn-x" onclick="closeOv('ov-users')">✕</div></div>
-  <div style="background:rgba(255,179,0,.07);border:1px solid rgba(255,179,0,.2);border-radius:7px;padding:10px 13px;margin-bottom:14px;font-size:11px;color:var(--amber);line-height:1.6">
-    ⚠ Como o sistema roda no GitHub Pages, os usuários precisam estar <strong>salvos no arquivo HTML</strong>.<br>
-    Preencha abaixo → clique <strong>Gerar</strong> → copie a linha gerada → adicione no arquivo → faça upload no GitHub.
+  <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:7px;padding:10px 13px;margin-bottom:14px;font-size:11px;color:var(--green);line-height:1.6">
+    ✅ Usuários são salvos diretamente no banco de dados Firebase.<br>
+    Cadastre abaixo — a pessoa já pode logar imediatamente em qualquer dispositivo.
   </div>
-  <div class="msec">Gerar Novo Usuário</div>
+  <div class="msec">Novo Usuário</div>
   <div class="fg">
     <div class="fi"><label>Usuário</label><input type="text" id="nu-user" placeholder="nome.sobrenome"></div>
     <div class="fi"><label>Senha</label><input type="password" id="nu-pass" placeholder="Mínimo 4 caracteres"></div>
     <div class="fi"><label>Nome Completo</label><input type="text" id="nu-nome" placeholder="Sd Fulano da Silva"></div>
     <div class="fi"><label>Perfil</label><select id="nu-role"><option value="user">Usuário</option><option value="admin">Administrador</option></select></div>
   </div>
-  <div style="display:flex;justify-content:flex-end;margin-top:10px;margin-bottom:18px"><button class="btn btn-cy" onclick="adicionarUsuario()">⚙ Gerar Código</button></div>
+  <div style="display:flex;justify-content:flex-end;margin-top:10px;margin-bottom:18px"><button class="btn btn-cy" onclick="adicionarUsuario()">➕ Cadastrar</button></div>
   <div class="msec">Usuários Cadastrados</div>
   <div class="user-list" id="user-list"></div>
   <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-users')">Fechar</button></div>
@@ -1494,17 +1494,42 @@ function getUsuarios(){
   return USUARIOS_SISTEMA;
 }
 
-function fazerLogin(){
+async function fazerLogin(){
   const u = document.getElementById('l-user').value.trim().toLowerCase();
   const p = document.getElementById('l-pass').value;
   const err = document.getElementById('login-err');
+  const btn = document.querySelector('.login-btn');
   if(!u||!p){err.textContent='Preencha usuário e senha.';return;}
-  const found = USUARIOS_SISTEMA.find(x=>x.user.toLowerCase()===u && x.pass===p);
-  if(!found){err.textContent='Usuário ou senha incorretos.';return;}
-  sessao = {user:found.user, nome:found.nome, role:found.role};
-  modoVisitante = false;
-  localStorage.setItem('scv_sessao', JSON.stringify(sessao));
-  aplicarAcesso();
+  err.textContent='';
+  btn.textContent='VERIFICANDO...';btn.disabled=true;
+  // Check fixed users first
+  const fixo = USUARIOS_SISTEMA.find(x=>x.user.toLowerCase()===u && x.pass===p);
+  if(fixo){
+    sessao = {user:fixo.user, nome:fixo.nome, role:fixo.role};
+    modoVisitante = false;
+    localStorage.setItem('scv_sessao', JSON.stringify(sessao));
+    btn.textContent='ENTRAR';btn.disabled=false;
+    aplicarAcesso();
+    return;
+  }
+  // Check Firebase users
+  try {
+    const doc = await db.collection('usuarios').doc(u).get();
+    if(doc.exists && doc.data().pass===p){
+      const d = doc.data();
+      sessao = {user:d.user, nome:d.nome, role:d.role};
+      modoVisitante = false;
+      localStorage.setItem('scv_sessao', JSON.stringify(sessao));
+      btn.textContent='ENTRAR';btn.disabled=false;
+      aplicarAcesso();
+    } else {
+      err.textContent='Usuário ou senha incorretos.';
+      btn.textContent='ENTRAR';btn.disabled=false;
+    }
+  } catch(e){
+    err.textContent='Erro de conexão. Tente novamente.';
+    btn.textContent='ENTRAR';btn.disabled=false;
+  }
 }
 
 function entrarComoVisitante(){
@@ -1597,55 +1622,68 @@ function openUsers(){
   openOv('ov-users');
 }
 
-function renderUserList(){
-  const lista=getUsuarios();
+async function renderUserList(){
   const el=document.getElementById('user-list');
-  el.innerHTML=lista.map((u,i)=>`
+  el.innerHTML='<div style="color:var(--txt3);font-family:var(--mono);font-size:11px;padding:10px">Carregando...</div>';
+  // Get fixed users
+  const fixos = USUARIOS_SISTEMA;
+  // Get Firebase users
+  let fbUsers = [];
+  try {
+    const snap = await db.collection('usuarios').get();
+    snap.forEach(doc => fbUsers.push(doc.data()));
+  } catch(e){ console.error(e); }
+  const todos = [...fixos, ...fbUsers.filter(u=>!fixos.find(f=>f.user===u.user))];
+  el.innerHTML = todos.map(u=>`
     <div class="user-row">
       <div>
         <div class="ur-name">${u.nome}</div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--txt2);margin-top:2px">@${u.user}</div>
       </div>
       <span class="ur-role ${u.role==='admin'?'ur-admin':'ur-user'}">${u.role==='admin'?'ADMIN':'USUÁRIO'}</span>
-      ${u.user!==ADMIN_FIXO.user?`<button class="btn btn-sm btn-rd" onclick="removerUsuario('${u.user}')">🗑</button>`:'<span style="font-family:var(--mono);font-size:9px;color:var(--txt3)">FIXO</span>'}
+      ${fixos.find(f=>f.user===u.user)?
+        '<span style="font-family:var(--mono);font-size:9px;color:var(--txt3)">FIXO</span>':
+        `<button class="btn btn-sm btn-rd" onclick="removerUsuario('${u.user}')">🗑</button>`
+      }
     </div>`).join('');
 }
 
-function adicionarUsuario(){
+async function adicionarUsuario(){
   const u=document.getElementById('nu-user').value.trim().toLowerCase();
   const p=document.getElementById('nu-pass').value;
   const n=document.getElementById('nu-nome').value.trim();
   const r=document.getElementById('nu-role').value;
   if(!u||!p||!n){alert('Preencha todos os campos.');return;}
   if(p.length<4){alert('Senha deve ter no mínimo 4 caracteres.');return;}
+  // Check if exists in fixed list or Firebase
   if(USUARIOS_SISTEMA.find(x=>x.user===u)){alert('Usuário já existe.');return;}
-
-  // Gera o texto para copiar e adicionar ao arquivo
-  const linha = `  {user:'${u}', pass:'${p}', nome:'${n}', role:'${r}'},`;
-  const msg = `✅ Usuário gerado!\n\n`+
-    `Copie a linha abaixo e adicione no arquivo HTML\n`+
-    `dentro de USUARIOS_SISTEMA, depois faça upload no GitHub:\n\n`+
-    linha;
-  
-  // Copia para clipboard
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(linha).then(()=>{
-      alert(msg + '\n\n(Linha copiada para a área de transferência!)');
-    }).catch(()=>alert(msg));
-  } else {
-    alert(msg);
+  const snap = await db.collection('usuarios').doc(u).get();
+  if(snap.exists){alert('Usuário já existe.');return;}
+  try {
+    await db.collection('usuarios').doc(u).set({user:u,pass:p,nome:n,role:r});
+    ['nu-user','nu-pass','nu-nome'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('nu-role').value='user';
+    renderUserList();
+    toast('✅ Usuário cadastrado com sucesso!');
+  } catch(e){
+    alert('Erro ao cadastrar: '+e.message);
   }
-  ['nu-user','nu-pass','nu-nome'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('nu-role').value='user';
 }
 
-function removerUsuario(usr){
+async function removerUsuario(usr){
   if(usr==='admin'){alert('Não é possível remover o admin fixo.');return;}
-  alert('Para remover o usuário "'+usr+'", delete a linha correspondente\nno array USUARIOS_SISTEMA do arquivo HTML e faça upload no GitHub.');
+  if(!confirm('Remover acesso de "'+usr+'"? Esta ação não pode ser desfeita.'))return;
+  try {
+    await db.collection('usuarios').doc(usr).delete();
+    renderUserList();
+    toast('🗑 Usuário removido.');
+  } catch(e){
+    alert('Erro ao remover: '+e.message);
+  }
 }
 
 // ── INIT AUTH ─────────────────────────────────────────────────
-(function initAuth(){
+(async function initAuth(){
   // check for saved session
   const saved = localStorage.getItem('scv_sessao');
   if(saved){
@@ -1655,6 +1693,11 @@ function removerUsuario(usr){
       const lista = getUsuarios();
       const valid = USUARIOS_SISTEMA.find(x=>x.user===sessao.user);
       if(valid){ aplicarAcesso(); return; }
+      // Check Firebase users
+      try {
+        const doc = await db.collection('usuarios').doc(sessao.user).get();
+        if(doc.exists){ aplicarAcesso(); return; }
+      } catch(e){}
     }catch(e){}
   }
   // show login
