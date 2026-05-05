@@ -283,7 +283,217 @@ select option{background:var(--s2)}
 .ur-admin{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
 .ur-user{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2)}
 
+
+/* Show/hide helpers - base (desktop) */
+.mobile-nav { display: none; }
+.vtr-cards { display: none; }
+.mobile-only { display: none; }
+@media (max-width: 768px) {
+  .mobile-only { display: block; }
+  .desktop-only { display: none !important; }
+  /* These are controlled by applyLayout() JS for reliability */
+}
+
+/* ══ MOBILE RESPONSIVE ══════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Hide desktop sidebar */
+  .sb { display: none !important; }
+
+  /* Main fills screen */
+  body { overflow: hidden; }
+  .main { width: 100vw; height: 100vh; }
+
+  /* Topbar mobile */
+  .topbar { height: 52px; padding: 0 14px; gap: 8px; }
+  .tb-unit { display: none; }
+  .tb-sep { display: none; }
+  .tb-title { font-size: 16px; }
+  .tb-dt { display: none; }
+  .tb-user { font-size: 9px; padding: 4px 8px; }
+  #topbtn { display: none !important; }
+
+  /* Content padding accounts for bottom nav */
+  .content { padding: 14px 14px 80px 14px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* BOTTOM NAV BAR */
+  .mobile-nav {
+    display: flex !important;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: var(--s1); border-top: 1px solid var(--border);
+    height: 62px; align-items: stretch;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mn-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; cursor: pointer;
+    color: var(--txt3); font-family: var(--mono); font-size: 8px;
+    letter-spacing: .5px; text-transform: uppercase;
+    border: none; background: none; padding: 6px 2px;
+    transition: color .15s; position: relative; -webkit-tap-highlight-color: transparent;
+  }
+  .mn-item.on { color: var(--cyan); }
+  .mn-item .mn-ic { font-size: 20px; line-height: 1; }
+  .mn-item .mn-badge {
+    position: absolute; top: 4px; right: calc(50% - 18px);
+    background: var(--red); color: #fff; font-size: 8px;
+    font-family: var(--mono); font-weight: 700; padding: 1px 4px;
+    border-radius: 8px; min-width: 14px; text-align: center;
+  }
+  .mn-more-menu {
+    display: none; position: fixed; bottom: 66px; right: 0; left: 0;
+    background: var(--s1); border-top: 1px solid var(--border);
+    padding: 12px 0; z-index: 60; animation: fi .2s ease;
+  }
+  .mn-more-menu.open { display: block; }
+  .mn-more-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 22px; color: var(--txt2); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background .1s;
+  }
+  .mn-more-item:hover, .mn-more-item:active { background: var(--s2); color: var(--txt); }
+  .mn-more-item .ic { font-size: 18px; width: 28px; text-align: center; }
+
+  /* STAT GRID → 2 cols */
+  .sg { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .sc { padding: 12px 14px; }
+  .sc-vl { font-size: 28px; }
+  .sc-sb { font-size: 10px; }
+  .sc-tr { font-size: 8px; padding: 1px 4px; }
+
+  /* DASH charts → single col */
+  .dr { grid-template-columns: 1fr; gap: 10px; }
+  .dr2 { grid-template-columns: 1fr; }
+  .dc { padding: 14px; }
+  .dc-h { margin-bottom: 12px; }
+
+  /* VIATURAS → cards instead of table */
+  .tw-outer { display: none !important; }
+  .vtr-cards { display: flex !important; flex-direction: column; gap: 10px; }
+
+  /* VTR CARD */
+  .vtr-card {
+    background: var(--s1); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; transition: border-color .2s;
+  }
+  .vtr-card:active { border-color: var(--border2); background: var(--s2); }
+  .vtr-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .vtr-card-left .vc-placa { font-family: var(--mono); font-size: 13px; font-weight: 800; color: var(--cyan); }
+  .vtr-card-left .vc-modelo { font-size: 14px; font-weight: 700; margin-top: 3px; }
+  .vtr-card-left .vc-pref { font-family: var(--mono); font-size: 10px; color: var(--txt3); margin-top: 2px; }
+  .vtr-card-right { text-align: right; }
+  .vtr-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+  .vtr-ci { background: var(--s2); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px; }
+  .vtr-ci-lbl { font-family: var(--mono); font-size: 8px; color: var(--txt3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 2px; }
+  .vtr-ci-val { font-size: 12px; font-weight: 600; color: var(--txt); }
+  .vtr-card-acts { display: flex; gap: 8px; margin-top: 4px; }
+
+  /* OS CARDS mobile */
+  .os-grid-wrap { grid-template-columns: 1fr; }
+  .os-info-grid { grid-template-columns: 1fr 1fr; }
+
+  /* PASTILHAS mobile */
+  .past-grid { grid-template-columns: 1fr; }
+
+  /* PNEUS mobile */
+  .pg { grid-template-columns: 1fr; }
+
+  /* MODALS mobile */
+  .modal { width: 100% !important; max-width: 100vw !important; margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important; position: fixed !important;
+    bottom: 0 !important; max-height: 92vh !important; padding: 20px 18px !important; }
+  .ov { align-items: flex-end !important; }
+
+  /* FORMS mobile */
+  .fg, .fg3, .fg4 { grid-template-columns: 1fr !important; }
+  .fg .fi.fu { grid-column: 1 !important; }
+
+  /* LOGIN mobile */
+  .login-box { padding: 28px 22px; }
+  .login-logo .lbrand { font-size: 40px; }
+
+  /* SEARCH + FILTER stacked */
+  .tc { flex-direction: column; }
+  .tc .srch-w { min-width: unset; }
+  .tc .flt { width: 100%; }
+
+  /* TR-H mobile */
+  .tr-h { flex-wrap: wrap; gap: 8px; }
+  .tr-h h2 { font-size: 18px; }
+
+  /* RPTS grid 1 col */
+  .rpt-grid { grid-template-columns: 1fr; }
+  .rpt-filters { grid-template-columns: 1fr; }
+}
+
+
+
+
+/* ══ DESKTOP OVERRIDE (≥769px) — force desktop layout ═══════ */
+@media (min-width: 769px) {
+  .sb { display: flex !important; }
+  .mobile-nav { display: none !important; }
+  .vtr-cards { display: none !important; }
+  #mobile-fab { display: none !important; }
+  .mn-more-menu { display: none !important; }
+  .tw-outer { display: block !important; }
+  body { overflow: hidden; }
+  .content { padding: 22px 26px !important; padding-bottom: 22px !important; }
+  .fg, .fg3, .fg4 { grid-template-columns: unset; }
+  .fg { grid-template-columns: 1fr 1fr; }
+  .fg3 { grid-template-columns: 1fr 1fr 1fr; }
+  .fg4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .modal { position: relative !important; bottom: unset !important; 
+           border-radius: 12px !important; max-height: 90vh !important; }
+  .ov { align-items: center !important; }
+  .os-grid-wrap { grid-template-columns: repeat(auto-fill,minmax(420px,1fr)); }
+  .past-grid { grid-template-columns: repeat(auto-fill,minmax(310px,1fr)); }
+  .pg { grid-template-columns: repeat(auto-fill,minmax(250px,1fr)); }
+  .rpt-grid { grid-template-columns: 1fr 1fr; }
+  .rpt-filters { grid-template-columns: 1fr 1fr 1fr; }
+  .sg { grid-template-columns: repeat(6,1fr); }
+  .dr { grid-template-columns: 1fr 1fr 1fr; }
+  .dr2 { grid-template-columns: 1.35fr 1fr; }
+  .tc { flex-direction: row; }
+  .tc .flt { width: auto; }
+}
+
 </style></head><body>
+
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav" id="mobile-nav">
+  <button class="mn-item on" id="mn-dash" onclick="goTo('dash',this);closeMobileMore()">
+    <span class="mn-ic">📊</span><span>Dashboard</span>
+  </button>
+  <button class="mn-item" id="mn-vtr" onclick="goTo('vtr',this);closeMobileMore()">
+    <span class="mn-ic">🚔</span><span>Viaturas</span>
+    <span class="mn-badge" id="m-badge" style="display:none">0</span>
+  </button>
+  <button class="mn-item" id="mn-os" onclick="goTo('os',this);closeMobileMore()">
+    <span class="mn-ic">📋</span><span>OS</span>
+    <span class="mn-badge" id="m-badge-os" style="display:none">0</span>
+  </button>
+  <button class="mn-item" id="mn-past" onclick="goTo('pastilhas',this);closeMobileMore()">
+    <span class="mn-ic">🔩</span><span>Pastilhas</span>
+  </button>
+  <button class="mn-item" id="mn-more" onclick="toggleMobileMore()">
+    <span class="mn-ic">☰</span><span>Mais</span>
+  </button>
+</nav>
+
+<!-- MOBILE MORE MENU -->
+<div class="mn-more-menu" id="mn-more-menu">
+  <div class="mn-more-item" onclick="goTo('os-hist',document.getElementById('mn-os'));closeMobileMore()"><span class="ic">✅</span>OS Realizadas</div>
+  <div class="mn-more-item" onclick="goTo('pneus',null);closeMobileMore()"><span class="ic">🔧</span>Estoque Pneus</div>
+  <div class="mn-more-item" onclick="openKmModal();closeMobileMore()"><span class="ic">📍</span>Atualizar KM</div>
+  <div class="mn-more-item" onclick="openCad();closeMobileMore()"><span class="ic">➕</span>Nova Viatura</div>
+  <div class="mn-more-item" onclick="openOsModal();closeMobileMore()"><span class="ic">📝</span>Nova OS</div>
+  <div class="mn-more-item" onclick="openPneu();closeMobileMore()"><span class="ic">📦</span>Novo Pneu</div>
+  <div class="mn-more-item" onclick="openRelatorio();closeMobileMore()"><span class="ic">📄</span>Relatórios</div>
+  <div class="mn-more-item" id="mn-more-users" style="display:none" onclick="openUsers();closeMobileMore()"><span class="ic">👥</span>Gerenciar Usuários</div>
+  <div class="mn-more-item" style="color:var(--red)" onclick="logoutConfirm()"><span class="ic">🚪</span>Sair</div>
+</div>
 
 <!-- TELA DE LOGIN -->
 <div class="login-screen" id="login-screen">
@@ -382,6 +592,8 @@ select option{background:var(--s2)}
           </table>
         </div>
       </div>
+      <!-- MOBILE VTR CARDS -->
+      <div class="vtr-cards" id="vtr-cards"></div>
     </div>
 
     <div class="page" id="p-os">
@@ -638,11 +850,12 @@ function goTo(p,el){
   const blbl={dash:'+ Nova Viatura',vtr:'+ Nova Viatura',os:'+ Nova OS','os-hist':'+ Nova OS',pastilhas:'🔩 Registrar Troca',pneus:'+ Pneu'};
   btn.setAttribute('onclick',bmap[p]||'openCad()');btn.textContent=blbl[p]||'+ Novo';
   if(p==='dash')renderDash();
-  if(p==='vtr'){renderVtr();setTimeout(syncTopScrollbar,100);}
+  if(p==='vtr'){renderVtr();if(isMobile())renderVtrCards();else setTimeout(syncTopScrollbar,100);}
   if(p==='os')renderOs();
   if(p==='os-hist')renderOsHist();
   if(p==='pastilhas')renderPastilhas();
   if(p==='pneus')renderPneus();
+  if(isMobile()){syncMobileNav(p);renderFAB(p);syncMobileBadges();}
 }
 function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){document.getElementById(id).classList.remove('open');}
@@ -662,7 +875,7 @@ function renderDash(){
     <div class="sc c-am"><div class="sc-gl"></div><div class="sc-lb">Manutenção</div><div class="sc-vl">${mn}</div><div class="sc-sb">Em oficina</div></div>
     <div class="sc c-or"><div class="sc-gl"></div><div class="sc-lb">OS Abertas</div><div class="sc-vl">${osAb}</div><div class="sc-sb">Em processo</div></div>
     <div class="sc c-am"><div class="sc-gl"></div><div class="sc-lb">Rev. Urgente</div><div class="sc-vl">${rv+rp}</div><div class="sc-sb">${rv} vencida / ${rp} próxima</div></div>`;
-  renderDonut(em,bx,mn,n);renderBar();renderAlerts();renderRevChart();renderOsChart();
+  renderDonut(em,bx,mn,n);renderBar();renderAlerts();renderRevChart();renderOsChart();syncMobileBadges();
 }
 
 function renderDonut(em,bx,mn,tot){
@@ -761,6 +974,7 @@ function renderVtr(){
     </tr>`;
   }).join('');
   setTimeout(syncTopScrollbar,50);
+  if(isMobile()) renderVtrCards();
 }
 
 // ══════ OS ═════════════════════════════════════════════════════
@@ -1200,6 +1414,8 @@ function aplicarAcesso(){
   const gb=document.getElementById('guest-banner');if(gb)gb.remove();
   renderDash();
   renderVtr();
+  applyLayout();
+  if(isMobile()){syncMobileNav('dash');renderFAB('dash');syncMobileBadges();document.getElementById('mn-more-users').style.display=sessao&&sessao.role==='admin'?'flex':'none';}
 }
 
 function aplicarAcessoVisitante(){
@@ -1224,6 +1440,8 @@ function aplicarAcessoVisitante(){
     banner.innerHTML='🔒 <strong>Acesso restrito.</strong> Você está visualizando apenas o dashboard. <a style="color:var(--cyan);cursor:pointer;margin-left:8px" onclick="voltarLogin()">Fazer login para acesso completo</a>';
     content.insertBefore(banner, content.firstChild);
   }
+  applyLayout();
+  if(isMobile()){syncMobileNav('dash');renderFAB('dash');syncMobileBadges();}
   // block nav clicks for non-dash
   document.querySelectorAll('.ni').forEach(n=>{
     const orig=n.getAttribute('onclick');
@@ -1311,6 +1529,160 @@ function removerUsuario(usr){
   document.getElementById('login-screen').classList.remove('hidden');
 })();
 
+
+// ══════ MOBILE ═════════════════════════════════════════════════
+const isMobile = () => window.innerWidth < 769;
+
+// Apply correct layout on load and resize
+function applyLayout(){
+  const mobile = isMobile();
+  // Desktop: show sidebar, hide mobile nav
+  document.getElementById('mobile-nav').style.display = mobile ? 'flex' : 'none';
+  const fab = document.getElementById('mobile-fab');
+  if(fab) fab.style.display = mobile ? 'flex' : 'none';
+  // vtr-cards vs table
+  const cards = document.getElementById('vtr-cards');
+  const tableOuter = document.querySelector('.tw-outer');
+  if(cards && tableOuter){
+    cards.style.display = mobile ? 'flex' : 'none';
+    tableOuter.style.display = mobile ? 'none' : '';
+  }
+}
+window.addEventListener('resize', applyLayout);
+
+function toggleMobileMore(){
+  document.getElementById('mn-more-menu').classList.toggle('open');
+}
+function closeMobileMore(){
+  document.getElementById('mn-more-menu').classList.remove('open');
+}
+// close more menu on outside click
+document.addEventListener('click', e => {
+  const menu = document.getElementById('mn-more-menu');
+  const btn = document.getElementById('mn-more');
+  if(menu && !menu.contains(e.target) && btn && !btn.contains(e.target)){
+    menu.classList.remove('open');
+  }
+});
+
+// sync mobile badges
+function syncMobileBadges(){
+  const bv = document.getElementById('m-badge');
+  const bo = document.getElementById('m-badge-os');
+  if(!bv||!bo) return;
+  const bvn = vtr.filter(v=>v.status==='BAIXADA'||v.status==='MANUTENÇÃO').length;
+  const bon = ordens.filter(o=>o.statusOs!=='ENTREGUE').length;
+  bv.textContent = bvn; bv.style.display = bvn>0?'block':'none';
+  bo.textContent = bon; bo.style.display = bon>0?'block':'none';
+}
+
+// sync mobile nav highlight
+function syncMobileNav(page){
+  const map = {dash:'mn-dash',vtr:'mn-vtr',os:'mn-os',pastilhas:'mn-past'};
+  document.querySelectorAll('.mn-item').forEach(x=>x.classList.remove('on'));
+  const id = map[page];
+  if(id){ const el=document.getElementById(id); if(el)el.classList.add('on'); }
+  else { document.getElementById('mn-more').classList.add('on'); }
+  // show users in more menu if admin
+  const mmu = document.getElementById('mn-more-users');
+  if(mmu) mmu.style.display = (sessao&&sessao.role==='admin')?'flex':'none';
+}
+
+// ── VIATURAS MOBILE CARDS ──────────────────────────────────────
+function renderVtrCards(){
+  const q=(document.getElementById('srch')||{value:''}).value.toLowerCase();
+  const fs=(document.getElementById('fst')||{value:''}).value;
+  const ft=(document.getElementById('ftp')||{value:''}).value;
+  let f=vtr.filter(v=>
+    (!q||(v.placa.toLowerCase().includes(q)||v.modelo.toLowerCase().includes(q)||v.pref.includes(q)||v.marca.toLowerCase().includes(q)))&&
+    (!fs||v.status===fs)&&(!ft||v.tipo.includes(ft))
+  );
+  const el=document.getElementById('vtr-cards');
+  if(!el) return;
+  if(!f.length){el.innerHTML='<div class="empty-c"><span>🔍</span>Nenhuma viatura encontrada</div>';return;}
+
+  const osMap={};
+  ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(!osMap[o.placa])osMap[o.placa]=[];osMap[o.placa].push(o.statusOs);});
+
+  el.innerHTML = f.map(v=>{
+    const d = v.kmrev>0 ? v.kmrev-v.km : null;
+    const kc = d===null?'':d<0?'er':d<=500?'wa':'ok';
+    const kt = d===null?'—':d<0?`⚠ −${Math.abs(d).toLocaleString()} km`:d<=500?`≈${d.toLocaleString()} km`:`+${d.toLocaleString()} km`;
+    const sc = v.status==='EM CONDIÇÃO'?'p-on':v.status==='BAIXADA'?'p-bx':'p-mn';
+    const sl = v.status==='EM CONDIÇÃO'?'ATIVA':v.status==='BAIXADA'?'BAIXADA':'MANUT.';
+    const pc = v.pneus<=20?'pf-r':v.pneus<=50?'pf-y':'pf-g';
+    const bc = v.past<=20?'pf-r':v.past<=50?'pf-y':'pf-g';
+    const osV = osMap[v.placa];
+    const osHtml = osV&&osV.length ? `<span class="op" style="font-size:10px">${osV[0]}</span>` : '';
+    return `<div class="vtr-card">
+      <div class="vtr-card-top">
+        <div class="vtr-card-left">
+          <div class="vc-placa">${v.placa}</div>
+          <div class="vc-modelo">${v.marca} ${v.modelo}</div>
+          <div class="vc-pref">Prefixo: ${v.pref||'—'} · ${(v.tipo.split(' - ')[0]||v.tipo).substring(0,4)}</div>
+        </div>
+        <div class="vtr-card-right">
+          <span class="pill ${sc}">${sl}</span>
+          ${osHtml ? `<div style="margin-top:5px">${osHtml}</div>` : ''}
+        </div>
+      </div>
+      <div class="vtr-card-grid">
+        <div class="vtr-ci">
+          <div class="vtr-ci-lbl">KM Atual</div>
+          <div class="vtr-ci-val" style="font-family:var(--mono)">${v.km.toLocaleString()}</div>
+        </div>
+        <div class="vtr-ci">
+          <div class="vtr-ci-lbl">KM Restante</div>
+          <div class="vtr-ci-val ${kc}" style="font-family:var(--mono)">${kt}</div>
+        </div>
+        <div class="vtr-ci">
+          <div class="vtr-ci-lbl">Últ. Revisão</div>
+          <div class="vtr-ci-val" style="font-size:11px">${fmtDt(v.dtrev)}</div>
+        </div>
+        <div class="vtr-ci">
+          <div class="vtr-ci-lbl">Próx. Revisão</div>
+          <div class="vtr-ci-val" style="font-size:11px">${fmtDt(v.dtprev)}</div>
+        </div>
+        <div class="vtr-ci">
+          <div class="vtr-ci-lbl">Pneus</div>
+          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${v.pneus}%</span></div></div>
+        </div>
+        <div class="vtr-ci">
+          <div class="vtr-ci-lbl">Pastilhas</div>
+          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${v.past}%</span></div></div>
+        </div>
+      </div>
+      <div class="vtr-card-acts">
+        <button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="openEdit(${v.id})">✏ Editar</button>
+        <button class="btn btn-sm btn-rd" onclick="excluir(${v.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── FAB (Floating Action Button) mobile ───────────────────────
+function renderFAB(page){
+  let fab = document.getElementById('mobile-fab');
+  const fabMap = {
+    vtr: {icon:'➕', action:'openCad()'},
+    os: {icon:'📝', action:'openOsModal()'},
+    'os-hist': {icon:'📝', action:'openOsModal()'},
+    pastilhas: {icon:'🔩', action:'openPastModal()'},
+    pneus: {icon:'📦', action:'openPneu()'},
+  };
+  if(!isMobile()){if(fab)fab.remove();return;}
+  const cfg = fabMap[page];
+  if(!cfg){if(fab)fab.remove();return;}
+  if(!fab){
+    fab = document.createElement('button');
+    fab.id = 'mobile-fab';
+    fab.style.cssText='position:fixed;bottom:74px;right:16px;width:52px;height:52px;border-radius:50%;background:var(--cyan);color:#000;font-size:22px;border:none;cursor:pointer;z-index:49;box-shadow:0 4px 20px rgba(0,229,255,.4);display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent';
+    document.body.appendChild(fab);
+  }
+  fab.textContent = cfg.icon;
+  fab.setAttribute('onclick', cfg.action);
+}
+
 // ══════ INIT ═══════════════════════════════════════════════════
 const ds=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
 document.getElementById('sb-dt').textContent=ds;
@@ -1318,4 +1690,5 @@ document.getElementById('tb-dt').textContent=ds;
 renderDash();
 renderVtr();
 setTimeout(syncTopScrollbar,300);
+applyLayout();
 </script></body></html>
