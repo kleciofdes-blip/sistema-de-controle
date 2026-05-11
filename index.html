@@ -917,21 +917,23 @@ async function save(retryCount){
   retryCount = retryCount || 0;
   _saving = true;
   setDbStatus('saving');
+  console.log('[SAVE] iniciando · vtr=' + vtr.length + ' viaturas, retry=' + retryCount);
   try {
     await Promise.all([
       db.collection('dados').doc('viaturas').set({lista: vtr, atualizadoEm: new Date().toISOString(), por: (sessao && sessao.user) || 'sistema'}),
       db.collection('dados').doc('pneus').set({lista: pneus, atualizadoEm: new Date().toISOString()}),
       db.collection('dados').doc('ordens').set({lista: ordens, atualizadoEm: new Date().toISOString()})
     ]);
-    _saving = false;
+    console.log('[SAVE] sucesso · vtr persistido no Firestore');
+    // Segura _saving por +1.5s pra deixar o eco do snapshot passar sem sobrescrever
+    setTimeout(() => { _saving = false; }, 1500);
     setDbStatus('saved');
     return true;
   } catch(e) {
-    console.error('Erro ao salvar:', e);
+    console.error('[SAVE] erro:', e);
     _saving = false;
-    // Retry automático até 2 vezes em caso de erro de rede
     if(retryCount < 2){
-      console.log('Tentando salvar novamente em 1.5s... (tentativa '+(retryCount+1)+'/2)');
+      console.log('[SAVE] tentando novamente em 1.5s... (tentativa '+(retryCount+1)+'/2)');
       await new Promise(r=>setTimeout(r,1500));
       return save(retryCount+1);
     }
@@ -978,18 +980,34 @@ async function loadFromFirestore(){
 }
 
 // ── REALTIME LISTENER (auto-refresh when data changes) ─────────
+let _syncStarted = false; // garante listener único
+let _firstSnap = { vtr:true, pneus:true, ordens:true }; // pula 1º snapshot (eco da leitura inicial)
 function startRealtimeSync(){
-  db.collection('dados').doc('viaturas').onSnapshot(snap => {
+  if(_syncStarted) return; // evita listeners duplicados
+  _syncStarted = true;
+
+  const opts = { includeMetadataChanges: false };
+
+  db.collection('dados').doc('viaturas').onSnapshot(opts, snap => {
+    if(_firstSnap.vtr){ _firstSnap.vtr = false; return; } // ignora 1º snapshot
+    if(_saving) return; // ignora durante save local
+    if(snap.metadata && snap.metadata.hasPendingWrites) return; // tem write nosso pendente
     if(snap.exists && snap.data().lista){
       vtr = snap.data().lista;
       renderDash();
       renderVtr();
     }
   });
-  db.collection('dados').doc('pneus').onSnapshot(snap => {
+  db.collection('dados').doc('pneus').onSnapshot(opts, snap => {
+    if(_firstSnap.pneus){ _firstSnap.pneus = false; return; }
+    if(_saving) return;
+    if(snap.metadata && snap.metadata.hasPendingWrites) return;
     if(snap.exists){ pneus = snap.data().lista || []; renderPneus(); }
   });
-  db.collection('dados').doc('ordens').onSnapshot(snap => {
+  db.collection('dados').doc('ordens').onSnapshot(opts, snap => {
+    if(_firstSnap.ordens){ _firstSnap.ordens = false; return; }
+    if(_saving) return;
+    if(snap.metadata && snap.metadata.hasPendingWrites) return;
     if(snap.exists){ ordens = snap.data().lista || []; renderOs(); renderOsHist(); renderDash(); }
   });
 }
