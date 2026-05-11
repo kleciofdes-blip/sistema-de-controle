@@ -680,7 +680,7 @@ select option{background:var(--s2)}
     </div>
 
     <div class="page" id="p-pastilhas">
-      <div class="tr-h"><h2>Controle de Pastilhas</h2><span class="tr-cnt" id="past-cnt">—</span><button class="btn btn-cy" style="margin-left:auto" onclick="openPastModal()">🔩 Registrar Troca</button></div>
+      <div class="tr-h"><h2>Controle de Manutenção (Pastilhas & Pneus)</h2><span class="tr-cnt" id="past-cnt">—</span><div style="display:flex;gap:8px;margin-left:auto"><button class="btn btn-cy" onclick="openPastModal()">🔩 Trocar Pastilha</button><button class="btn btn-cy" onclick="openPneuTrocaModal()">🛞 Trocar Pneu</button></div></div>
       <div class="tc">
         <div class="srch-w"><span style="color:var(--txt3)">🔍</span><input type="text" id="past-srch" placeholder="Buscar placa ou modelo..." oninput="renderPastilhas()"></div>
         <select class="flt" id="past-fst" onchange="renderPastilhas()"><option value="">Todos os Status</option><option value="OK">Em dia (&gt;50%)</option><option value="ALERTA">Atenção (20–50%)</option><option value="CRITICO">Crítico (≤20%)</option></select>
@@ -724,15 +724,26 @@ select option{background:var(--s2)}
     <div class="fi"><label>Data Próxima Revisão</label><input type="date" id="f-dtprev"></div>
     <div class="fi"><label>Situação</label><select id="f-sit"><option value="Incorporado">Incorporado</option><option value="Desincorporado">Desincorporado</option></select></div>
   </div>
-  <div class="msec">Situação Operacional & Componentes</div>
+  <div class="msec">Situação Operacional</div>
   <div class="fg">
     <div class="fi"><label>Status</label><select id="f-status"><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Em Manutenção</option></select></div>
     <div class="fi"><label>Local / Destinação Atual</label><input type="text" id="f-local"></div>
     <div class="fi"><label>Destinação Formal</label><input type="text" id="f-dest"></div>
-    <div class="fi"><label>Pneus (%)</label><select id="f-pneus" class="pct-sel"></select></div>
+  </div>
+  <div class="msec">Pastilhas de Freio</div>
+  <div class="fg fg4">
     <div class="fi"><label>Pastilhas (%)</label><select id="f-past" class="pct-sel"></select></div>
-    <div class="fi"><label>Data Troca Pastilhas</label><input type="date" id="f-dtpast"></div>
-    <div class="fi"><label>Duração Pastilhas (meses)</label><input type="number" id="f-durpast" value="12" min="1" max="60"></div>
+    <div class="fi"><label>KM Última Troca</label><input type="number" id="f-kmultpast" placeholder="km na última troca"></div>
+    <div class="fi"><label>KM Próxima Troca</label><input type="number" id="f-kmprxpast" placeholder="manual"></div>
+    <div class="fi"><label>Data Troca</label><input type="date" id="f-dtpast"></div>
+    <div class="fi"><label>Duração (meses)</label><input type="number" id="f-durpast" value="12" min="1" max="60"></div>
+  </div>
+  <div class="msec">Pneus</div>
+  <div class="fg fg4">
+    <div class="fi"><label>Pneus (%)</label><select id="f-pneus" class="pct-sel"></select></div>
+    <div class="fi"><label>KM Última Troca</label><input type="number" id="f-kmultpneu" oninput="calcPneuPrx('f')" placeholder="km na última troca"></div>
+    <div class="fi"><label>KM Próx. Troca (auto +35.000)</label><input type="number" id="f-kmprxpneu" readonly style="opacity:.5"></div>
+    <div class="fi"><label>Data Troca Pneu</label><input type="date" id="f-dtpneu"></div>
   </div>
   <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-cad')">Cancelar</button><button class="btn btn-cy" onclick="salvarCad()">💾 Salvar Viatura</button></div>
 </div></div>
@@ -772,11 +783,26 @@ select option{background:var(--s2)}
   <div class="fg fg1 fg">
     <div class="fi"><label>Viatura</label><select id="past-vtr-sel"><option value="">Selecionar viatura...</option></select></div>
     <div class="fi"><label>Data da Troca</label><input type="date" id="past-data"></div>
+    <div class="fi"><label>KM Última Troca (atual da viatura)</label><input type="number" id="past-kmult" placeholder="km da viatura no momento da troca"></div>
+    <div class="fi"><label>KM Próxima Troca (manual)</label><input type="number" id="past-kmprx" placeholder="ex: 60.000"></div>
     <div class="fi"><label>Duração Estimada (meses)</label><input type="number" id="past-dur" value="12" min="1" max="60"></div>
     <div class="fi"><label>% Atual das Pastilhas</label><select id="past-pct" class="pct-sel"></select></div>
     <div class="fi"><label>Observações (marca, tipo...)</label><input type="text" id="past-obs" placeholder="Ex: Bosch Blue, Orgânica..."></div>
   </div>
   <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-past')">Cancelar</button><button class="btn btn-cy" onclick="salvarPast()">✅ Registrar Troca</button></div>
+</div></div>
+
+<div class="ov" id="ov-pneu-troca"><div class="modal modal-sm">
+  <div class="modal-top"><div><div class="m-title">🛞 Registrar Troca de Pneu</div><div class="m-sub" id="pneu-troca-sub">Nova troca</div></div><div class="btn-x" onclick="closeOv('ov-pneu-troca')">✕</div></div>
+  <div class="fg fg1 fg">
+    <div class="fi"><label>Viatura</label><select id="pneu-troca-vtr"><option value="">Selecionar viatura...</option></select></div>
+    <div class="fi"><label>Data da Troca</label><input type="date" id="pneu-troca-data"></div>
+    <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmult" oninput="document.getElementById('pneu-troca-kmprx').value = (parseInt(this.value)||0) ? (parseInt(this.value)+35000) : ''" placeholder="km da viatura"></div>
+    <div class="fi"><label>KM Próxima Troca (auto +35.000)</label><input type="number" id="pneu-troca-kmprx" readonly style="opacity:.6"></div>
+    <div class="fi"><label>% Atual dos Pneus</label><select id="pneu-troca-pct" class="pct-sel"></select></div>
+    <div class="fi"><label>Observações (marca, medida...)</label><input type="text" id="pneu-troca-obs" placeholder="Ex: Pirelli 195/55 R15"></div>
+  </div>
+  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-pneu-troca')">Cancelar</button><button class="btn btn-cy" onclick="salvarPneuTroca()">✅ Registrar Troca</button></div>
 </div></div>
 
 <div class="ov" id="ov-pneu"><div class="modal modal-sm">
@@ -963,7 +989,9 @@ async function loadFromFirestore(){
         const kmrev=parseInt(v.kmrev,10)||0;
         const iv=parseInt(v.iv,10)||5000;
         const kmUltRev = parseInt(v.kmUltRev,10) || (kmrev>iv ? kmrev-iv : 0);
-        return {...v, km, kmrev, iv, kmUltRev, pneus: parseInt(v.pneus,10)||0, past: parseInt(v.past,10)||0};
+        const kmUltPneu = parseInt(v.kmUltPneu,10)||0;
+        const kmPrxPneu = parseInt(v.kmPrxPneu,10) || (kmUltPneu>0 ? kmUltPneu+35000 : 0);
+        return {...v, km, kmrev, iv, kmUltRev, pneus: parseInt(v.pneus,10)||0, past: parseInt(v.past,10)||0, kmUltPast: parseInt(v.kmUltPast,10)||0, kmPrxPast: parseInt(v.kmPrxPast,10)||0, kmUltPneu, kmPrxPneu};
       });
     } else {
       // First time: seed with D0 data
@@ -1009,7 +1037,9 @@ function startRealtimeSync(){
         const kmrev=parseInt(v.kmrev,10)||0;
         const iv=parseInt(v.iv,10)||5000;
         const kmUltRev = parseInt(v.kmUltRev,10) || (kmrev>iv ? kmrev-iv : 0);
-        return {...v, km, kmrev, iv, kmUltRev, pneus: parseInt(v.pneus,10)||0, past: parseInt(v.past,10)||0};
+        const kmUltPneu = parseInt(v.kmUltPneu,10)||0;
+        const kmPrxPneu = parseInt(v.kmPrxPneu,10) || (kmUltPneu>0 ? kmUltPneu+35000 : 0);
+        return {...v, km, kmrev, iv, kmUltRev, pneus: parseInt(v.pneus,10)||0, past: parseInt(v.past,10)||0, kmUltPast: parseInt(v.kmUltPast,10)||0, kmPrxPast: parseInt(v.kmPrxPast,10)||0, kmUltPneu, kmPrxPneu};
       });
       renderDash();
       renderVtr();
@@ -1043,9 +1073,12 @@ function calcR(p){
   const iv=parseInt(document.getElementById(p+'-int').value)||5000;
   const kmUltEl=document.getElementById(p+'-kmult');
   const kmUlt=kmUltEl?(parseInt(kmUltEl.value)||0):0;
-  // Próx. Rev = KM Última Rev + intervalo (se houver kmUlt). Senão, usa KM Atual + intervalo
   const base = kmUlt>0 ? kmUlt : km;
   document.getElementById(p+'-kmrev').value=base+iv;
+}
+function calcPneuPrx(p){
+  const kmUltPneu=parseInt(document.getElementById(p+'-kmultpneu').value)||0;
+  document.getElementById(p+'-kmprxpneu').value = kmUltPneu>0 ? kmUltPneu+35000 : '';
 }
 
 // ══════ NAV ════════════════════════════════════════════════════
@@ -1203,11 +1236,25 @@ function renderBar(){
 function renderAlerts(){
   const al=[];
   vtr.forEach(v=>{
-    if(v.kmrev>0&&v.km>v.kmrev)al.push({col:'#ff3d57',t:`Revisão vencida — faltam ${(v.km-v.kmrev).toLocaleString()} km`,pl:v.placa,s:`${v.marca} ${v.modelo}`});
-    else if(v.kmrev>0&&(v.kmrev-v.km)<=500&&v.km<=v.kmrev)al.push({col:'#ffb300',t:`Revisão em ${(v.kmrev-v.km).toLocaleString()} km`,pl:v.placa,s:`${v.marca} ${v.modelo}`});
-    if(v.pneus<=20)al.push({col:'#ffb300',t:`Pneus críticos — ${v.pneus}%`,pl:v.placa,s:`${v.marca} ${v.modelo}`});
-    if(v.past<=20)al.push({col:'#ff3d57',t:`Pastilhas críticas — ${v.past}%`,pl:v.placa,s:`${v.marca} ${v.modelo}`});
-    if(v.dtpast&&v.durpast){const prx=addMeses(v.dtpast,v.durpast);if(prx&&prx<=hoje())al.push({col:'#ff3d57',t:`Troca de pastilha vencida`,pl:v.placa,s:`Prev: ${fmtDt(prx)}`});}
+    if(v.status==='BAIXADA') return;
+    const ref=v.pref||v.placa;
+    if(v.kmrev>0&&v.km>v.kmrev)al.push({col:'#ff3d57',t:`Revisão vencida — ${(v.km-v.kmrev).toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
+    else if(v.kmrev>0&&(v.kmrev-v.km)<=500&&v.km<=v.kmrev)al.push({col:'#ffb300',t:`Revisão em ${(v.kmrev-v.km).toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
+    // Pastilha por KM
+    if(v.kmPrxPast>0){
+      const d=v.kmPrxPast-v.km;
+      if(d<0)al.push({col:'#ff3d57',t:`Pastilha vencida — ${Math.abs(d).toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
+      else if(d<=500)al.push({col:'#ffb300',t:`Pastilha em ${d.toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
+    }
+    // Pneu por KM (35k)
+    if(v.kmPrxPneu>0){
+      const d=v.kmPrxPneu-v.km;
+      if(d<0)al.push({col:'#ff3d57',t:`Pneu vencido — ${Math.abs(d).toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
+      else if(d<=2000)al.push({col:'#ffb300',t:`Pneu em ${d.toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
+    }
+    if(v.pneus<=20)al.push({col:'#ffb300',t:`Pneus críticos — ${v.pneus}%`,pl:ref,s:`${v.marca} ${v.modelo}`});
+    if(v.past<=20)al.push({col:'#ff3d57',t:`Pastilhas críticas — ${v.past}%`,pl:ref,s:`${v.marca} ${v.modelo}`});
+    if(v.dtpast&&v.durpast){const prx=addMeses(v.dtpast,v.durpast);if(prx&&prx<=hoje())al.push({col:'#ff3d57',t:`Troca de pastilha vencida`,pl:ref,s:`Prev: ${fmtDt(prx)}`});}
   });
   document.getElementById('dob-al').textContent=al.length;
   const el=document.getElementById('al-list');
@@ -1459,29 +1506,67 @@ function renderPastilhas(){
     const alertaMsg=pst==='CRITICO'?'⚠ TROCA URGENTE NECESSÁRIA':pst==='ALERTA'?'⚠ Atenção — desgaste elevado':'✓ Pastilhas em boas condições';
     const mText=mesesRest!==null?(mesesRest<=0?`Vencida há ${Math.abs(mesesRest)} meses`:`${mesesRest} meses restantes`):'—';
     const mColor=mesesRest===null?'var(--txt)':mesesRest<=0?'var(--red)':mesesRest<=2?'var(--amber)':'var(--green)';
+    // Pastilhas — comparativo de KM
+    const kmAtual=parseInt(v.km,10)||0;
+    const kmUltPast=parseInt(v.kmUltPast,10)||0;
+    const kmPrxPast=parseInt(v.kmPrxPast,10)||0;
+    const restPast = kmPrxPast>0 ? kmPrxPast-kmAtual : null;
+    const restPastTxt = restPast===null ? '—' : restPast<0 ? `⚠ ${Math.abs(restPast).toLocaleString()} km VENCIDO` : `${restPast.toLocaleString()} km`;
+    const restPastCol = restPast===null ? 'var(--txt3)' : restPast<0 ? 'var(--red)' : restPast<=500 ? 'var(--amber)' : 'var(--green)';
+
+    // Pneus — auto +35.000
+    const pneuPct=parseInt(v.pneus,10)||0;
+    const kmUltPneu=parseInt(v.kmUltPneu,10)||0;
+    const kmPrxPneu = parseInt(v.kmPrxPneu,10) || (kmUltPneu>0 ? kmUltPneu+35000 : 0);
+    const restPneu = kmPrxPneu>0 ? kmPrxPneu-kmAtual : null;
+    const restPneuTxt = restPneu===null ? '—' : restPneu<0 ? `⚠ ${Math.abs(restPneu).toLocaleString()} km VENCIDO` : `${restPneu.toLocaleString()} km`;
+    const restPneuCol = restPneu===null ? 'var(--txt3)' : restPneu<0 ? 'var(--red)' : restPneu<=2000 ? 'var(--amber)' : 'var(--green)';
+    const pneuPfc=pneuPct<=20?'pf-r':pneuPct<=50?'pf-y':'pf-g';
+
     return `<div class="past-card" style="border-top:3px solid ${col}">
       <div class="past-card-top">
         <div>
-          <span class="past-placa">${v.placa}</span>
+          <span class="past-placa" style="background:var(--cyan);color:#fff">${v.pref||v.placa}</span>
           <div class="past-modelo">${v.marca} ${v.modelo}</div>
-          <div class="past-tipo">${v.tipo.split(' - ')[0]||v.tipo} · Pref: ${v.pref}</div>
+          <div class="past-tipo">${v.tipo.split(' - ')[0]||v.tipo} · Placa: ${v.placa}</div>
         </div>
         <div class="past-pct-box">
           <div class="past-pct-val" style="color:${col}">${v.past}%</div>
-          <div class="past-pct-lbl">VIDA ÚTIL</div>
+          <div class="past-pct-lbl">PASTILHAS</div>
         </div>
       </div>
       <div class="past-bar"><div class="past-bar-fill ${pfc}" style="width:${v.past}%"></div></div>
-      <div class="past-info-grid">
-        <div class="past-info-item"><div class="past-info-lbl">📅 Data da Troca</div><div class="past-info-val">${fmtDt(v.dtpast)}</div></div>
-        <div class="past-info-item"><div class="past-info-lbl">⏱ Duração Prevista</div><div class="past-info-val">${v.durpast?v.durpast+' meses':'—'}</div></div>
-        <div class="past-info-item"><div class="past-info-lbl">🔄 Tempo em Uso</div><div class="past-info-val">${tempUsado!==null?tempUsado+' meses':'—'}</div></div>
-        <div class="past-info-item"><div class="past-info-lbl">🔔 Próxima Troca</div><div class="past-info-val" style="color:${pst==='CRITICO'?'var(--red)':pst==='ALERTA'?'var(--amber)':'var(--txt)'}">${fmtDt(prxTroca)}</div></div>
-        <div class="past-info-item" style="grid-column:1/-1"><div class="past-info-lbl">📊 Tempo Restante</div><div class="past-info-val" style="color:${mColor}">${mText}</div></div>
+
+      <div style="margin-top:10px;padding:10px;background:var(--s2);border-radius:8px">
+        <div style="font-size:10px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🔩 Pastilhas</div>
+        <div class="past-info-grid">
+          <div class="past-info-item"><div class="past-info-lbl">KM Última Troca</div><div class="past-info-val" style="font-family:var(--mono)">${kmUltPast>0?kmUltPast.toLocaleString()+' km':'—'}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">KM Próxima Troca</div><div class="past-info-val" style="font-family:var(--mono)">${kmPrxPast>0?kmPrxPast.toLocaleString()+' km':'—'}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">KM Restante</div><div class="past-info-val" style="color:${restPastCol};font-family:var(--mono);font-weight:700">${restPastTxt}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">📅 Data Troca</div><div class="past-info-val">${fmtDt(v.dtpast)}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">⏱ Duração</div><div class="past-info-val">${v.durpast?v.durpast+' meses':'—'}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">📊 Tempo Rest.</div><div class="past-info-val" style="color:${mColor}">${mText}</div></div>
+        </div>
       </div>
+
+      <div style="margin-top:10px;padding:10px;background:var(--s2);border-radius:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px">🛞 Pneus</div>
+          <span style="font-size:11px;font-weight:700;color:var(--txt2)">${pneuPct}% vida útil</span>
+        </div>
+        <div class="past-bar" style="margin-bottom:8px"><div class="past-bar-fill ${pneuPfc}" style="width:${pneuPct}%"></div></div>
+        <div class="past-info-grid">
+          <div class="past-info-item"><div class="past-info-lbl">KM Última Troca</div><div class="past-info-val" style="font-family:var(--mono)">${kmUltPneu>0?kmUltPneu.toLocaleString()+' km':'—'}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">KM Próxima (+35k)</div><div class="past-info-val" style="font-family:var(--mono)">${kmPrxPneu>0?kmPrxPneu.toLocaleString()+' km':'—'}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">KM Restante</div><div class="past-info-val" style="color:${restPneuCol};font-family:var(--mono);font-weight:700">${restPneuTxt}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">📅 Data Troca</div><div class="past-info-val">${fmtDt(v.dtpneu)}</div></div>
+        </div>
+      </div>
+
       <div class="past-alerta" style="background:${pst==='CRITICO'?'rgba(255,61,87,.1)':pst==='ALERTA'?'rgba(255,179,0,.1)':'rgba(0,230,118,.1)'};color:${col}">${alertaMsg}</div>
       <div class="past-actions">
-        <button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="openPastModalVtr(${v.id})">🔩 Registrar Troca</button>
+        <button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="openPastModalVtr(${v.id})">🔩 Trocar Pastilha</button>
+        <button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="openPneuTrocaModal(${v.id})">🛞 Trocar Pneu</button>
         <button class="btn btn-sm" style="background:transparent;border-color:var(--border)" onclick="openEdit(${v.id})">✏</button>
       </div>
     </div>`;
@@ -1492,11 +1577,13 @@ function openPastModal(){
   if(blockSeVisitante())return;
   document.getElementById('past-modal-sub').textContent='Registrar nova troca de pastilhas';
   const sel=document.getElementById('past-vtr-sel');
-  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.placa} — ${v.marca} ${v.modelo}</option>`).join('');
+  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.pref||v.placa} — ${v.marca} ${v.modelo}</option>`).join('');
   document.getElementById('past-data').value=hoje();
   document.getElementById('past-dur').value='12';
   document.getElementById('past-pct').value='100';
   document.getElementById('past-obs').value='';
+  document.getElementById('past-kmult').value='';
+  document.getElementById('past-kmprx').value='';
   openOv('ov-past');
 }
 function openPastModalVtr(vId){
@@ -1504,7 +1591,11 @@ function openPastModalVtr(vId){
   openPastModal();
   document.getElementById('past-vtr-sel').value=vId;
   const v=vtr.find(x=>x.id==vId);
-  if(v)document.getElementById('past-modal-sub').textContent=`${v.placa} — ${v.marca} ${v.modelo}`;
+  if(v){
+    document.getElementById('past-modal-sub').textContent=`${v.pref||v.placa} — ${v.marca} ${v.modelo}`;
+    // Pré-preenche KM atual da viatura como sugestão
+    document.getElementById('past-kmult').value=v.km||'';
+  }
 }
 function salvarPast(){
   const v=vtr.find(x=>x.id==document.getElementById('past-vtr-sel').value);
@@ -1512,8 +1603,48 @@ function salvarPast(){
   v.dtpast=document.getElementById('past-data').value;
   v.durpast=parseInt(document.getElementById('past-dur').value)||12;
   v.past=parseInt(document.getElementById('past-pct').value)||100;
+  const kmUlt=parseInt(document.getElementById('past-kmult').value)||0;
+  const kmPrx=parseInt(document.getElementById('past-kmprx').value)||0;
+  if(kmUlt>0) v.kmUltPast=kmUlt;
+  if(kmPrx>0) v.kmPrxPast=kmPrx;
   closeOv('ov-past');renderPastilhas();renderDash();
   save().then(ok=>{ if(ok) toast('🔩 Troca de pastilha registrada e sincronizada!'); });
+}
+
+function openPneuTrocaModal(vId){
+  if(blockSeVisitante())return;
+  const sel=document.getElementById('pneu-troca-vtr');
+  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.pref||v.placa} — ${v.marca} ${v.modelo}</option>`).join('');
+  document.getElementById('pneu-troca-data').value=hoje();
+  document.getElementById('pneu-troca-pct').value='100';
+  document.getElementById('pneu-troca-obs').value='';
+  document.getElementById('pneu-troca-kmult').value='';
+  document.getElementById('pneu-troca-kmprx').value='';
+  if(vId){
+    document.getElementById('pneu-troca-vtr').value=vId;
+    const v=vtr.find(x=>x.id==vId);
+    if(v){
+      document.getElementById('pneu-troca-sub').textContent=`${v.pref||v.placa} — ${v.marca} ${v.modelo}`;
+      document.getElementById('pneu-troca-kmult').value=v.km||'';
+      if(v.km>0) document.getElementById('pneu-troca-kmprx').value=v.km+35000;
+    }
+  } else {
+    document.getElementById('pneu-troca-sub').textContent='Nova troca';
+  }
+  openOv('ov-pneu-troca');
+}
+function salvarPneuTroca(){
+  const v=vtr.find(x=>x.id==document.getElementById('pneu-troca-vtr').value);
+  if(!v){alert('Selecione uma viatura.');return;}
+  v.dtpneu=document.getElementById('pneu-troca-data').value;
+  v.pneus=parseInt(document.getElementById('pneu-troca-pct').value)||100;
+  const kmUlt=parseInt(document.getElementById('pneu-troca-kmult').value)||0;
+  if(kmUlt>0){
+    v.kmUltPneu=kmUlt;
+    v.kmPrxPneu=kmUlt+35000;
+  }
+  closeOv('ov-pneu-troca');renderPastilhas();renderDash();
+  save().then(ok=>{ if(ok) toast('🛞 Troca de pneu registrada e sincronizada!'); });
 }
 
 // ══════ PNEUS ══════════════════════════════════════════════════
@@ -1533,7 +1664,7 @@ function openCad(){
   if(blockSeVisitante())return;
   editId=null;
   document.getElementById('cad-title').textContent='Nova Viatura';
-  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast','f-kmultpast','f-kmprxpast','f-kmultpneu','f-kmprxpneu','f-dtpneu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-status').value='EM CONDIÇÃO';
   document.getElementById('f-pneus').value='100';
   document.getElementById('f-past').value='100';
@@ -1549,7 +1680,12 @@ function salvarCad(){
   const kmUltRev=parseInt(document.getElementById('f-kmult').value)||0;
   const base = kmUltRev>0 ? kmUltRev : km;
   const kmrev=parseInt(document.getElementById('f-kmrev').value)||(base+iv);
-  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,sit:document.getElementById('f-sit').value};
+  const kmUltPast=parseInt(document.getElementById('f-kmultpast').value)||0;
+  const kmPrxPast=parseInt(document.getElementById('f-kmprxpast').value)||0;
+  const kmUltPneu=parseInt(document.getElementById('f-kmultpneu').value)||0;
+  const kmPrxPneu=parseInt(document.getElementById('f-kmprxpneu').value) || (kmUltPneu>0 ? kmUltPneu+35000 : 0);
+  const dtpneu=document.getElementById('f-dtpneu').value;
+  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,kmUltPast,kmPrxPast,kmUltPneu,kmPrxPneu,dtpneu,sit:document.getElementById('f-sit').value};
   if(!v.placa){alert('Informe a placa.');return;}
   const isEdit = !!editId;
   if(isEdit){const i=vtr.findIndex(x=>x.id===editId);if(i>=0)vtr[i]=v;}else vtr.push(v);
@@ -1586,6 +1722,11 @@ function openEdit(id){
   document.getElementById('f-past').value=v.past||100;
   document.getElementById('f-dtpast').value=v.dtpast||'';
   document.getElementById('f-durpast').value=v.durpast||12;
+  document.getElementById('f-kmultpast').value=v.kmUltPast||'';
+  document.getElementById('f-kmprxpast').value=v.kmPrxPast||'';
+  document.getElementById('f-kmultpneu').value=v.kmUltPneu||'';
+  document.getElementById('f-kmprxpneu').value=v.kmPrxPneu||(v.kmUltPneu?v.kmUltPneu+35000:'');
+  document.getElementById('f-dtpneu').value=v.dtpneu||'';
   openOv('ov-cad');
 }
 function excluir(id){if(blockSeVisitante())return;if(!confirm('Excluir esta viatura?'))return;vtr=vtr.filter(x=>x.id!==id);renderVtr();renderDash();save().then(ok=>{if(ok)toast('✅ Viatura removida do servidor');});}
