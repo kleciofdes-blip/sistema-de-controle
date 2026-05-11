@@ -710,32 +710,6 @@ select option{background:var(--s2)}
   <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-cad')">Cancelar</button><button class="btn btn-cy" onclick="salvarCad()">💾 Salvar Viatura</button></div>
 </div></div>
 
-<div class="ov" id="ov-edit"><div class="modal modal-lg">
-  <div class="modal-top"><div><div class="m-title">Editar Viatura</div><div class="m-sub" id="edit-sub">—</div></div><div class="btn-x" onclick="closeOv('ov-edit')">✕</div></div>
-  <div class="msec">Situação Operacional</div>
-  <div class="fg">
-    <div class="fi"><label>Status</label><select id="e-status"><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Em Manutenção</option></select></div>
-    <div class="fi"><label>Local</label><input type="text" id="e-local"></div>
-    <div class="fi"><label>Destinação</label><input type="text" id="e-dest"></div>
-    <div class="fi"><label>Pneus (%)</label><select id="e-pneus" class="pct-sel"></select></div>
-    <div class="fi"><label>Pastilhas (%)</label><select id="e-past" class="pct-sel"></select></div>
-    <div class="fi"><label>Data Troca Pastilhas</label><input type="date" id="e-dtpast"></div>
-    <div class="fi"><label>Duração Pastilhas (meses)</label><input type="number" id="e-durpast" value="12"></div>
-  </div>
-  <div class="msec">Quilometragem & Revisão</div>
-  <div class="fg fg4">
-    <div class="fi"><label>KM Atual</label><input type="number" id="e-km" oninput="calcR('e')"></div>
-    <div class="fi"><label>KM Última Revisão</label><input type="number" id="e-kmult" oninput="calcR('e')" placeholder="km na última troca de óleo"></div>
-    <div class="fi"><label>Intervalo Revisão</label><select id="e-int" onchange="calcR('e')"><option value="5000">5.000 km</option><option value="10000">10.000 km</option></select></div>
-    <div class="fi"><label>KM Próxima Rev.</label><input type="number" id="e-kmrev" readonly style="opacity:.5"></div>
-    <div class="fi"><label>Data Última Revisão</label><input type="date" id="e-dtrev"></div>
-  </div>
-  <div class="fg">
-    <div class="fi"><label>Data Próxima Revisão</label><input type="date" id="e-dtprev"></div>
-  </div>
-  <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-edit')">Cancelar</button><button class="btn btn-cy" onclick="salvarEdit()">💾 Salvar Alterações</button></div>
-</div></div>
-
 <div class="ov" id="ov-os"><div class="modal modal-lg">
   <div class="modal-top"><div><div class="m-title" id="os-modal-title">Nova OS Prima</div><div class="m-sub">Ordem de Serviço</div></div><div class="btn-x" onclick="closeOv('ov-os')">✕</div></div>
   <div class="msec">Identificação da OS</div>
@@ -1507,40 +1481,35 @@ function salvarCad(){
 }
 function openEdit(id){
   if(blockSeVisitante())return;
-  const v=vtr.find(x=>x.id===id);if(!v)return;editId=id;
-  document.getElementById('edit-sub').textContent=`${v.marca} ${v.modelo} · ${v.placa}`;
-  document.getElementById('e-status').value=v.status;
-  document.getElementById('e-local').value=v.local||'';
-  document.getElementById('e-dest').value=v.dest||'';
-  document.getElementById('e-pneus').value=v.pneus;
-  document.getElementById('e-past').value=v.past;
-  document.getElementById('e-km').value=v.km;
-  document.getElementById('e-kmult').value=v.kmUltRev||'';
-  document.getElementById('e-kmrev').value=v.kmrev;
-  document.getElementById('e-int').value=v.iv;
-  document.getElementById('e-dtrev').value=v.dtrev||'';
-  document.getElementById('e-dtprev').value=v.dtprev||'';
-  document.getElementById('e-dtpast').value=v.dtpast||'';
-  document.getElementById('e-durpast').value=v.durpast||12;
-  openOv('ov-edit');
-}
-function salvarEdit(){
-  const v=vtr.find(x=>x.id===editId);if(!v)return;
-  v.status=document.getElementById('e-status').value;
-  v.local=document.getElementById('e-local').value;
-  v.dest=document.getElementById('e-dest').value;
-  v.pneus=parseInt(document.getElementById('e-pneus').value)||0;
-  v.past=parseInt(document.getElementById('e-past').value)||0;
-  v.km=parseInt(document.getElementById('e-km').value)||0;
-  v.kmUltRev=parseInt(document.getElementById('e-kmult').value)||0;
-  v.iv=parseInt(document.getElementById('e-int').value)||5000;
-  v.kmrev=parseInt(document.getElementById('e-kmrev').value)||0;
-  v.dtrev=document.getElementById('e-dtrev').value;
-  v.dtprev=document.getElementById('e-dtprev').value;
-  v.dtpast=document.getElementById('e-dtpast').value;
-  v.durpast=parseInt(document.getElementById('e-durpast').value)||12;
-  closeOv('ov-edit');renderVtr();renderDash();renderPastilhas();
-  save().then(ok=>{ if(ok) toast('✅ Viatura atualizada no servidor!'); });
+  const v=vtr.find(x=>x.id===id);if(!v)return;
+  editId=id;
+  // Reusa o modal de cadastro completo — todos os campos editáveis
+  document.getElementById('cad-title').textContent='Editar Viatura';
+  document.getElementById('f-pref').value=v.pref||'';
+  document.getElementById('f-tomb').value=v.tomb||'';
+  document.getElementById('f-tipo').value=v.tipo||'Veículo';
+  document.getElementById('f-marca').value=v.marca||'';
+  document.getElementById('f-modelo').value=v.modelo||'';
+  document.getElementById('f-versao').value=v.versao||'';
+  document.getElementById('f-trans').value=v.trans||'AUTOMATICA';
+  document.getElementById('f-anofab').value=v.anofab||'';
+  document.getElementById('f-anomod').value=v.anomod||'';
+  document.getElementById('f-placa').value=v.placa||'';
+  document.getElementById('f-km').value=v.km||0;
+  document.getElementById('f-kmult').value=v.kmUltRev||'';
+  document.getElementById('f-int').value=v.iv||5000;
+  document.getElementById('f-kmrev').value=v.kmrev||0;
+  document.getElementById('f-dtrev').value=v.dtrev||'';
+  document.getElementById('f-dtprev').value=v.dtprev||'';
+  document.getElementById('f-sit').value=v.sit||'Incorporado';
+  document.getElementById('f-status').value=v.status||'EM CONDIÇÃO';
+  document.getElementById('f-local').value=v.local||'';
+  document.getElementById('f-dest').value=v.dest||'';
+  document.getElementById('f-pneus').value=v.pneus||100;
+  document.getElementById('f-past').value=v.past||100;
+  document.getElementById('f-dtpast').value=v.dtpast||'';
+  document.getElementById('f-durpast').value=v.durpast||12;
+  openOv('ov-cad');
 }
 function excluir(id){if(blockSeVisitante())return;if(!confirm('Excluir esta viatura?'))return;vtr=vtr.filter(x=>x.id!==id);renderVtr();renderDash();save().then(ok=>{if(ok)toast('✅ Viatura removida do servidor');});}
 
