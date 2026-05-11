@@ -954,7 +954,15 @@ async function loadFromFirestore(){
     ]);
 
     if(vtrDoc.exists && vtrDoc.data().lista && vtrDoc.data().lista.length > 0){
-      vtr = vtrDoc.data().lista;
+      // Normaliza campos numéricos (evita string concat tipo "820005000")
+      vtr = vtrDoc.data().lista.map(v=>({
+        ...v,
+        km: parseInt(v.km,10)||0,
+        kmrev: parseInt(v.kmrev,10)||0,
+        iv: parseInt(v.iv,10)||5000,
+        pneus: parseInt(v.pneus,10)||0,
+        past: parseInt(v.past,10)||0
+      }));
     } else {
       // First time: seed with D0 data
       vtr = JSON.parse(JSON.stringify(D0));
@@ -993,7 +1001,15 @@ function startRealtimeSync(){
     if(_saving) return; // ignora durante save local
     if(snap.metadata && snap.metadata.hasPendingWrites) return; // tem write nosso pendente
     if(snap.exists && snap.data().lista){
-      vtr = snap.data().lista;
+      // Normaliza campos numéricos (evita string concat tipo "820005000")
+      vtr = snap.data().lista.map(v=>({
+        ...v,
+        km: parseInt(v.km,10)||0,
+        kmrev: parseInt(v.kmrev,10)||0,
+        iv: parseInt(v.iv,10)||5000,
+        pneus: parseInt(v.pneus,10)||0,
+        past: parseInt(v.past,10)||0
+      }));
       renderDash();
       renderVtr();
     }
@@ -1556,8 +1572,8 @@ function atualizarPreviewKm(vid){
   }
   const nv = parseInt(raw,10);
   if(isNaN(nv)) return;
-  // Próxima revisão = sempre KM atual + intervalo (mesma lógica do salvarKm)
-  const intervalo = v.iv || 5000;
+  // Próxima revisão = sempre KM atual + intervalo (mesma lógica do salvarKm) — força número
+  const intervalo = parseInt(v.iv, 10) || 5000;
   const novoKmrev = nv + intervalo;
   const rest = novoKmrev - nv; // = intervalo
   const restTxt = `+${rest.toLocaleString()} km`;
@@ -1575,14 +1591,16 @@ function salvarKm(){
     if(raw === '') return; // campo vazio: não mexe
     const nv = parseInt(raw, 10);
     if(isNaN(nv) || nv < 0){ ignorados.push(v.pref||v.placa); return; }
-    if(nv === v.km) return; // sem mudança
-    // Atualiza o KM (aceita pra cima ou pra baixo)
+    const kmAtual = parseInt(v.km, 10) || 0;
+    if(nv === kmAtual) return; // sem mudança
+    // Atualiza o KM (aceita pra cima ou pra baixo) — força número
     v.km = nv;
     alterados++;
-    // SEMPRE recalcula a próxima revisão = KM atual + intervalo padrão
-    const intervalo = v.iv || 5000;
+    // SEMPRE recalcula a próxima revisão = KM atual + intervalo padrão (em número)
+    const intervalo = parseInt(v.iv, 10) || 5000;
     v.kmrev = nv + intervalo;
     regerados++;
+    console.log('[KM] vtr='+v.id+' '+(v.pref||v.placa)+' · novo km='+nv+' · novo kmrev='+v.kmrev+' · restante='+intervalo);
   });
 
   closeOv('ov-km');
