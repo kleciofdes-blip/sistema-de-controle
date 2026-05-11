@@ -625,7 +625,7 @@ select option{background:var(--s2)}
           <table id="vtr-table">
             <thead><tr>
               <th>#</th><th>Placa</th><th>Prefixo</th><th>Tipo</th><th>Marca / Modelo</th>
-              <th>KM Atual</th><th>Data Últ. Revisão</th><th>KM Próx. Revisão</th>
+              <th>KM Atual</th><th>KM Últ. Revisão</th><th>Data Últ. Revisão</th><th>KM Próx. Revisão</th>
               <th>Data Próx. Revisão</th><th>KM Restante</th>
               <th>Pneus</th><th>Pastilhas</th><th>Status</th><th>OS Prima</th><th>Local</th><th></th>
             </tr></thead>
@@ -688,6 +688,7 @@ select option{background:var(--s2)}
   <div class="msec">Quilometragem & Revisão</div>
   <div class="fg fg4">
     <div class="fi"><label>KM Atual</label><input type="number" id="f-km" oninput="calcR('f')"></div>
+    <div class="fi"><label>KM Última Revisão</label><input type="number" id="f-kmult" oninput="calcR('f')" placeholder="km na última troca de óleo"></div>
     <div class="fi"><label>Intervalo Revisão</label><select id="f-int" onchange="calcR('f')"><option value="5000">5.000 km</option><option value="10000">10.000 km</option></select></div>
     <div class="fi"><label>KM Próxima Rev. (auto)</label><input type="number" id="f-kmrev" readonly style="opacity:.5"></div>
     <div class="fi"><label>Data Última Revisão</label><input type="date" id="f-dtrev"></div>
@@ -724,6 +725,7 @@ select option{background:var(--s2)}
   <div class="msec">Quilometragem & Revisão</div>
   <div class="fg fg4">
     <div class="fi"><label>KM Atual</label><input type="number" id="e-km" oninput="calcR('e')"></div>
+    <div class="fi"><label>KM Última Revisão</label><input type="number" id="e-kmult" oninput="calcR('e')" placeholder="km na última troca de óleo"></div>
     <div class="fi"><label>Intervalo Revisão</label><select id="e-int" onchange="calcR('e')"><option value="5000">5.000 km</option><option value="10000">10.000 km</option></select></div>
     <div class="fi"><label>KM Próxima Rev.</label><input type="number" id="e-kmrev" readonly style="opacity:.5"></div>
     <div class="fi"><label>Data Última Revisão</label><input type="date" id="e-dtrev"></div>
@@ -954,15 +956,14 @@ async function loadFromFirestore(){
     ]);
 
     if(vtrDoc.exists && vtrDoc.data().lista && vtrDoc.data().lista.length > 0){
-      // Normaliza campos numéricos (evita string concat tipo "820005000")
-      vtr = vtrDoc.data().lista.map(v=>({
-        ...v,
-        km: parseInt(v.km,10)||0,
-        kmrev: parseInt(v.kmrev,10)||0,
-        iv: parseInt(v.iv,10)||5000,
-        pneus: parseInt(v.pneus,10)||0,
-        past: parseInt(v.past,10)||0
-      }));
+      // Normaliza campos numéricos + backfill de kmUltRev em registros antigos
+      vtr = vtrDoc.data().lista.map(v=>{
+        const km=parseInt(v.km,10)||0;
+        const kmrev=parseInt(v.kmrev,10)||0;
+        const iv=parseInt(v.iv,10)||5000;
+        const kmUltRev = parseInt(v.kmUltRev,10) || (kmrev>iv ? kmrev-iv : 0);
+        return {...v, km, kmrev, iv, kmUltRev, pneus: parseInt(v.pneus,10)||0, past: parseInt(v.past,10)||0};
+      });
     } else {
       // First time: seed with D0 data
       vtr = JSON.parse(JSON.stringify(D0));
@@ -1002,14 +1003,13 @@ function startRealtimeSync(){
     if(snap.metadata && snap.metadata.hasPendingWrites) return; // tem write nosso pendente
     if(snap.exists && snap.data().lista){
       // Normaliza campos numéricos (evita string concat tipo "820005000")
-      vtr = snap.data().lista.map(v=>({
-        ...v,
-        km: parseInt(v.km,10)||0,
-        kmrev: parseInt(v.kmrev,10)||0,
-        iv: parseInt(v.iv,10)||5000,
-        pneus: parseInt(v.pneus,10)||0,
-        past: parseInt(v.past,10)||0
-      }));
+      vtr = snap.data().lista.map(v=>{
+        const km=parseInt(v.km,10)||0;
+        const kmrev=parseInt(v.kmrev,10)||0;
+        const iv=parseInt(v.iv,10)||5000;
+        const kmUltRev = parseInt(v.kmUltRev,10) || (kmrev>iv ? kmrev-iv : 0);
+        return {...v, km, kmrev, iv, kmUltRev, pneus: parseInt(v.pneus,10)||0, past: parseInt(v.past,10)||0};
+      });
       renderDash();
       renderVtr();
     }
@@ -1037,7 +1037,15 @@ function dataBR(){return new Date().toLocaleDateString('pt-BR');}
 function dateTimeStr(){return new Date().toLocaleString('pt-BR');}
 function fillPct(){const o=Array.from({length:11},(_,i)=>`<option value="${i*10}">${i*10}%</option>`).join('');document.querySelectorAll('.pct-sel').forEach(s=>s.innerHTML=o);}
 fillPct();
-function calcR(p){const km=parseInt(document.getElementById(p+'-km').value)||0;const iv=parseInt(document.getElementById(p+'-int').value)||5000;document.getElementById(p+'-kmrev').value=km+iv;}
+function calcR(p){
+  const km=parseInt(document.getElementById(p+'-km').value)||0;
+  const iv=parseInt(document.getElementById(p+'-int').value)||5000;
+  const kmUltEl=document.getElementById(p+'-kmult');
+  const kmUlt=kmUltEl?(parseInt(kmUltEl.value)||0):0;
+  // Próx. Rev = KM Última Rev + intervalo (se houver kmUlt). Senão, usa KM Atual + intervalo
+  const base = kmUlt>0 ? kmUlt : km;
+  document.getElementById(p+'-kmrev').value=base+iv;
+}
 
 // ══════ NAV ════════════════════════════════════════════════════
 function goTo(p,el){
@@ -1217,7 +1225,7 @@ function renderVtr(){
   const osMap={};
   ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(!osMap[o.placa])osMap[o.placa]=[];osMap[o.placa].push(o.statusOs);});
   const tb=document.getElementById('tbody');
-  if(!f.length){tb.innerHTML='<tr><td colspan="16"><div class="empty-c"><span>🔍</span>Nenhuma viatura encontrada</div></td></tr>';return;}
+  if(!f.length){tb.innerHTML='<tr><td colspan="17"><div class="empty-c"><span>🔍</span>Nenhuma viatura encontrada</div></td></tr>';return;}
   tb.innerHTML=f.map((v,i)=>{
     const d=v.kmrev>0?v.kmrev-v.km:null;
     let kc='ok',kt='—';
@@ -1236,6 +1244,7 @@ function renderVtr(){
       <td><span class="ttag">${tp}</span></td>
       <td style="font-size:12px;font-weight:600;min-width:140px">${v.marca}<br><span style="color:var(--txt2);font-size:11px;font-weight:400">${v.modelo}</span></td>
       <td class="km-m" style="font-weight:700">${v.km.toLocaleString()} km</td>
+      <td class="km-m" style="color:var(--txt2)">${v.kmUltRev>0?v.kmUltRev.toLocaleString()+' km':'—'}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${fmtDt(v.dtrev)}</td>
       <td class="km-m">${v.kmrev>0?v.kmrev.toLocaleString()+' km':'—'}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${fmtDt(v.dtprev)}</td>
@@ -1473,7 +1482,7 @@ function openCad(){
   if(blockSeVisitante())return;
   editId=null;
   document.getElementById('cad-title').textContent='Nova Viatura';
-  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-km','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-status').value='EM CONDIÇÃO';
   document.getElementById('f-pneus').value='100';
   document.getElementById('f-past').value='100';
@@ -1486,8 +1495,10 @@ function openCad(){
 function salvarCad(){
   const km=parseInt(document.getElementById('f-km').value)||0;
   const iv=parseInt(document.getElementById('f-int').value)||5000;
-  const kmrev=parseInt(document.getElementById('f-kmrev').value)||(km+iv);
-  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,sit:document.getElementById('f-sit').value};
+  const kmUltRev=parseInt(document.getElementById('f-kmult').value)||0;
+  const base = kmUltRev>0 ? kmUltRev : km;
+  const kmrev=parseInt(document.getElementById('f-kmrev').value)||(base+iv);
+  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,sit:document.getElementById('f-sit').value};
   if(!v.placa){alert('Informe a placa.');return;}
   const isEdit = !!editId;
   if(isEdit){const i=vtr.findIndex(x=>x.id===editId);if(i>=0)vtr[i]=v;}else vtr.push(v);
@@ -1504,6 +1515,7 @@ function openEdit(id){
   document.getElementById('e-pneus').value=v.pneus;
   document.getElementById('e-past').value=v.past;
   document.getElementById('e-km').value=v.km;
+  document.getElementById('e-kmult').value=v.kmUltRev||'';
   document.getElementById('e-kmrev').value=v.kmrev;
   document.getElementById('e-int').value=v.iv;
   document.getElementById('e-dtrev').value=v.dtrev||'';
@@ -1520,6 +1532,7 @@ function salvarEdit(){
   v.pneus=parseInt(document.getElementById('e-pneus').value)||0;
   v.past=parseInt(document.getElementById('e-past').value)||0;
   v.km=parseInt(document.getElementById('e-km').value)||0;
+  v.kmUltRev=parseInt(document.getElementById('e-kmult').value)||0;
   v.iv=parseInt(document.getElementById('e-int').value)||5000;
   v.kmrev=parseInt(document.getElementById('e-kmrev').value)||0;
   v.dtrev=document.getElementById('e-dtrev').value;
@@ -1536,12 +1549,16 @@ function openKmModal(){
   if(blockSeVisitante())return;
   document.getElementById('km-dt').textContent='Data: '+new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   document.getElementById('kml').innerHTML=vtr.filter(v=>v.status!=='BAIXADA').map(v=>{
-    const rest = v.kmrev>0 ? (v.kmrev - v.km) : null;
+    const kmrev = parseInt(v.kmrev,10)||0;
+    const kmUlt = parseInt(v.kmUltRev,10)||0;
+    const rest = kmrev>0 ? (kmrev - v.km) : null;
     const restTxt = rest===null ? '—' : (rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`);
     const restCol = rest===null ? 'var(--txt3)' : rest<0 ? 'var(--red)' : rest<=500 ? 'var(--amber)' : 'var(--green)';
+    const ultTxt = kmUlt>0 ? `Últ.Rev: ${kmUlt.toLocaleString()}` : 'Últ.Rev: —';
+    const prxTxt = kmrev>0 ? `Próx.Rev: ${kmrev.toLocaleString()}` : 'Próx.Rev: —';
     return `<div class="kmr">
       <span class="kmr-p">${v.pref||v.placa}</span>
-      <span class="kmr-n">${v.marca} ${v.modelo} <span style="color:var(--txt3);font-size:9px;font-family:var(--mono)">${v.placa}</span></span>
+      <span class="kmr-n">${v.marca} ${v.modelo} <span style="color:var(--txt3);font-size:9px;font-family:var(--mono)">${v.placa}</span><br><span style="color:var(--txt3);font-size:9px">${ultTxt} → ${prxTxt}</span></span>
       <span class="kmr-c" style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
         <span>Atual: ${v.km.toLocaleString()}</span>
         <span id="prev-${v.id}" style="font-size:9px;color:${restCol};font-weight:700">Restante: ${restTxt}</span>
@@ -1559,48 +1576,35 @@ function atualizarPreviewKm(vid){
   const inp = document.getElementById('km-'+vid);
   const prev = document.getElementById('prev-'+vid);
   if(!inp || !prev) return;
+  const kmrev = parseInt(v.kmrev,10)||0;
   const raw = (inp.value||'').toString().replace(/\D/g,'');
-  if(raw === ''){ // restaura preview original
-    const rest = v.kmrev>0 ? (v.kmrev - v.km) : null;
-    if(rest===null){ prev.textContent='Restante: —'; prev.style.color='var(--txt3)'; }
-    else {
-      const restTxt = rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`;
-      prev.textContent = 'Restante: ' + restTxt;
-      prev.style.color = rest<0?'var(--red)':rest<=500?'var(--amber)':'var(--green)';
-    }
-    return;
-  }
-  const nv = parseInt(raw,10);
+  const nv = raw === '' ? v.km : parseInt(raw,10);
   if(isNaN(nv)) return;
-  // Próxima revisão = sempre KM atual + intervalo (mesma lógica do salvarKm) — força número
-  const intervalo = parseInt(v.iv, 10) || 5000;
-  const novoKmrev = nv + intervalo;
-  const rest = novoKmrev - nv; // = intervalo
-  const restTxt = `+${rest.toLocaleString()} km`;
-  let txt = `<span style="color:var(--green)">Novo restante: ${restTxt}</span>`;
-  txt += `<br><span style="color:var(--cyan);font-size:9px">↻ Próx. rev: ${novoKmrev.toLocaleString()} km</span>`;
-  prev.innerHTML = txt;
+  // kmrev é fixo. Restante = kmrev - novo km
+  const rest = kmrev>0 ? (kmrev - nv) : null;
+  if(rest===null){ prev.textContent='Restante: —'; prev.style.color='var(--txt3)'; return; }
+  const restTxt = rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`;
+  const col = rest<0?'var(--red)':rest<=500?'var(--amber)':'var(--green)';
+  prev.innerHTML = `<span style="color:${col}">Restante: ${restTxt}</span>`;
 }
 function salvarKm(){
   if(blockSeVisitante())return;
-  let alterados = 0, regerados = 0, ignorados = [];
+  let alterados = 0, ignorados = [];
   vtr.forEach(v=>{
     const inp = document.getElementById('km-'+v.id);
     if(!inp) return;
     const raw = (inp.value || '').toString().replace(/\D/g,'');
-    if(raw === '') return; // campo vazio: não mexe
+    if(raw === '') return;
     const nv = parseInt(raw, 10);
     if(isNaN(nv) || nv < 0){ ignorados.push(v.pref||v.placa); return; }
     const kmAtual = parseInt(v.km, 10) || 0;
-    if(nv === kmAtual) return; // sem mudança
-    // Atualiza o KM (aceita pra cima ou pra baixo) — força número
+    if(nv === kmAtual) return;
     v.km = nv;
     alterados++;
-    // SEMPRE recalcula a próxima revisão = KM atual + intervalo padrão (em número)
-    const intervalo = parseInt(v.iv, 10) || 5000;
-    v.kmrev = nv + intervalo;
-    regerados++;
-    console.log('[KM] vtr='+v.id+' '+(v.pref||v.placa)+' · novo km='+nv+' · novo kmrev='+v.kmrev+' · restante='+intervalo);
+    // kmrev é FIXO (KM Última Rev + intervalo). Só muda no cadastro/edição quando registra revisão.
+    // KM Restante é derivado: kmrev - km (renderizado dinamicamente)
+    const restante = (parseInt(v.kmrev,10)||0) - nv;
+    console.log('[KM] vtr='+v.id+' '+(v.pref||v.placa)+' · novo km='+nv+' · kmrev='+v.kmrev+' · restante='+restante);
   });
 
   closeOv('ov-km');
@@ -1615,12 +1619,10 @@ function salvarKm(){
 
   save().then(ok => {
     if(!ok){
-      // save() já mostrou alerta de erro; mas reabre modal pra usuário não perder edição
-      alert('⚠ Não foi possível salvar no servidor.\nVerifique a conexão e tente novamente.\n\nDica: tente abrir o "Atualizar KM" de novo — os valores já estão na tela.');
+      alert('⚠ Não foi possível salvar no servidor.\nVerifique a conexão e tente novamente.');
       return;
     }
     let msg = `✅ ${alterados} KM atualizado(s) e sincronizado(s)`;
-    if(regerados > 0) msg += ` · ${regerados} revisão(ões) recalculada(s)`;
     if(ignorados.length > 0) msg += ` · ${ignorados.length} ignorada(s): ${ignorados.slice(0,3).join(', ')}`;
     toast(msg);
   }).catch(err => {
@@ -2087,6 +2089,14 @@ function renderVtrCards(){
         <div class="vtr-ci">
           <div class="vtr-ci-lbl">KM Atual</div>
           <div class="vtr-ci-val" style="font-family:var(--mono)">${v.km.toLocaleString()}</div>
+        </div>
+        <div class="vtr-ci">
+          <div class="vtr-ci-lbl">KM Últ. Rev.</div>
+          <div class="vtr-ci-val" style="font-family:var(--mono);font-size:12px">${v.kmUltRev>0?v.kmUltRev.toLocaleString():'—'}</div>
+        </div>
+        <div class="vtr-ci">
+          <div class="vtr-ci-lbl">KM Próx. Rev.</div>
+          <div class="vtr-ci-val" style="font-family:var(--mono);font-size:12px">${v.kmrev>0?v.kmrev.toLocaleString():'—'}</div>
         </div>
         <div class="vtr-ci">
           <div class="vtr-ci-lbl">KM Restante</div>
