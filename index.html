@@ -624,7 +624,7 @@ select option{background:var(--s2)}
         <div class="tw" id="tw-main">
           <table id="vtr-table">
             <thead><tr>
-              <th>#</th><th>Placa</th><th>Prefixo</th><th>Tipo</th><th>Marca / Modelo</th>
+              <th>#</th><th>Prefixo</th><th>Placa</th><th>Tipo</th><th>Marca / Modelo</th>
               <th>KM Atual</th><th>KM Últ. Revisão</th><th>Data Últ. Revisão</th><th>KM Próx. Revisão</th>
               <th>Data Próx. Revisão</th><th>KM Restante</th>
               <th>Pneus</th><th>Pastilhas</th><th>Status</th><th>OS Prima</th><th>Local</th><th></th>
@@ -1239,8 +1239,8 @@ function renderVtr(){
     const osHtml=osV&&osV.length?`<span class="op">${osV[0]}</span>`:'<span style="color:var(--txt3);font-size:10px">—</span>';
     return `<tr>
       <td style="color:var(--txt3);font-family:var(--mono);font-size:10px">${i+1}</td>
-      <td><span class="placa">${v.placa}</span></td>
-      <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${v.pref||'—'}</td>
+      <td><span class="placa" style="background:var(--cyan);color:#fff;padding:3px 8px;border-radius:6px;font-weight:700">${v.pref||'—'}</span></td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${v.placa}</td>
       <td><span class="ttag">${tp}</span></td>
       <td style="font-size:12px;font-weight:600;min-width:140px">${v.marca}<br><span style="color:var(--txt2);font-size:11px;font-weight:400">${v.modelo}</span></td>
       <td class="km-m" style="font-weight:700">${v.km.toLocaleString()} km</td>
@@ -2076,9 +2076,9 @@ function renderVtrCards(){
     return `<div class="vtr-card">
       <div class="vtr-card-top">
         <div class="vtr-card-left">
-          <div class="vc-placa">${v.placa}</div>
+          <div class="vc-placa">${v.pref||'—'}</div>
           <div class="vc-modelo">${v.marca} ${v.modelo}</div>
-          <div class="vc-pref">Prefixo: ${v.pref||'—'} · ${(v.tipo.split(' - ')[0]||v.tipo).substring(0,4)}</div>
+          <div class="vc-pref">Placa: ${v.placa} · ${(v.tipo.split(' - ')[0]||v.tipo).substring(0,4)}</div>
         </div>
         <div class="vtr-card-right">
           <span class="pill ${sc}">${sl}</span>
