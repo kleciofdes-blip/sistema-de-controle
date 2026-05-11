@@ -1505,10 +1505,57 @@ function openKmModal(){
   openOv('ov-km');
 }
 function salvarKm(){
-  let alterados = 0;
-  vtr.forEach(v=>{const inp=document.getElementById('km-'+v.id);if(!inp)return;const nv=parseInt(inp.value)||v.km;if(nv>=v.km){if(nv!==v.km)alterados++;if(v.kmrev>0&&nv>v.kmrev)v.kmrev=nv+v.iv;v.km=nv;}});
-  closeOv('ov-km');renderVtr();renderDash();
-  save().then(ok=>{ if(ok) toast('✅ '+alterados+' KM atualizado(s) e sincronizado(s)!'); });
+  if(blockSeVisitante())return;
+  let alterados = 0, regerados = 0, ignorados = [];
+  vtr.forEach(v=>{
+    const inp = document.getElementById('km-'+v.id);
+    if(!inp) return;
+    const raw = (inp.value || '').toString().replace(/\D/g,'');
+    if(raw === '') return; // campo vazio: não mexe
+    const nv = parseInt(raw, 10);
+    if(isNaN(nv) || nv < 0){ ignorados.push(v.pref||v.placa); return; }
+    if(nv === v.km) return; // sem mudança
+    // Atualiza o KM da viatura (aceita pra cima ou pra baixo - permite correção)
+    const kmAntigo = v.km;
+    v.km = nv;
+    alterados++;
+    // Recalcula KM da próxima revisão automaticamente se passou
+    if(v.kmrev > 0 && nv > v.kmrev){
+      const intervalo = v.iv || 5000;
+      v.kmrev = nv + intervalo;
+      regerados++;
+    }
+    // Se reduzir KM (correção pra menor) e tiver kmrev distorcido, ajusta
+    if(v.kmrev > 0 && nv < v.km && (v.kmrev - nv) > (v.iv * 3)){
+      v.kmrev = nv + (v.iv || 5000);
+      regerados++;
+    }
+  });
+
+  closeOv('ov-km');
+  renderVtr();
+  renderDash();
+  renderPastilhas();
+
+  if(alterados === 0 && ignorados.length === 0){
+    toast('ℹ Nenhuma alteração detectada.');
+    return;
+  }
+
+  save().then(ok => {
+    if(!ok){
+      // save() já mostrou alerta de erro; mas reabre modal pra usuário não perder edição
+      alert('⚠ Não foi possível salvar no servidor.\nVerifique a conexão e tente novamente.\n\nDica: tente abrir o "Atualizar KM" de novo — os valores já estão na tela.');
+      return;
+    }
+    let msg = `✅ ${alterados} KM atualizado(s) e sincronizado(s)`;
+    if(regerados > 0) msg += ` · ${regerados} revisão(ões) recalculada(s)`;
+    if(ignorados.length > 0) msg += ` · ${ignorados.length} ignorada(s): ${ignorados.slice(0,3).join(', ')}`;
+    toast(msg);
+  }).catch(err => {
+    console.error('Erro inesperado em salvarKm:', err);
+    alert('⚠ Erro inesperado ao salvar:\n' + (err && err.message ? err.message : err));
+  });
 }
 
 // ══════ RELATÓRIOS ═════════════════════════════════════════════
