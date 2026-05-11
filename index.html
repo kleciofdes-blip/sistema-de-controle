@@ -522,11 +522,11 @@ select option{background:var(--s2)}
 <div class="mn-more-menu" id="mn-more-menu">
   <div class="mn-more-item" onclick="goTo('os-hist',document.getElementById('mn-os'));closeMobileMore()"><span class="ic">✅</span>OS Realizadas</div>
   <div class="mn-more-item" onclick="goTo('pneus',null);closeMobileMore()"><span class="ic">🔧</span>Estoque Pneus</div>
-  <div class="mn-more-item" onclick="openKmModal();closeMobileMore()"><span class="ic">📍</span>Atualizar KM</div>
-  <div class="mn-more-item" onclick="openCad();closeMobileMore()"><span class="ic">➕</span>Nova Viatura</div>
-  <div class="mn-more-item" onclick="openOsModal();closeMobileMore()"><span class="ic">📝</span>Nova OS</div>
-  <div class="mn-more-item" onclick="openPneu();closeMobileMore()"><span class="ic">📦</span>Novo Pneu</div>
-  <div class="mn-more-item" onclick="openRelatorio();closeMobileMore()"><span class="ic">📄</span>Relatórios</div>
+  <div class="mn-more-item mn-acao" onclick="openKmModal();closeMobileMore()"><span class="ic">📍</span>Atualizar KM</div>
+  <div class="mn-more-item mn-acao" onclick="openCad();closeMobileMore()"><span class="ic">➕</span>Nova Viatura</div>
+  <div class="mn-more-item mn-acao" onclick="openOsModal();closeMobileMore()"><span class="ic">📝</span>Nova OS</div>
+  <div class="mn-more-item mn-acao" onclick="openPneu();closeMobileMore()"><span class="ic">📦</span>Novo Pneu</div>
+  <div class="mn-more-item mn-acao" onclick="openRelatorio();closeMobileMore()"><span class="ic">📄</span>Relatórios</div>
   <div class="mn-more-item" id="mn-more-users" style="display:none" onclick="openUsers();closeMobileMore()"><span class="ic">👥</span>Gerenciar Usuários</div>
   <div class="mn-more-item" style="color:var(--red)" onclick="logoutConfirm()"><span class="ic">🚪</span>Sair</div>
 </div>
@@ -562,7 +562,7 @@ select option{background:var(--s2)}
     <div class="fi"><label>Usuário</label><input type="text" id="nu-user" placeholder="nome.sobrenome"></div>
     <div class="fi"><label>Senha</label><input type="password" id="nu-pass" placeholder="Mínimo 4 caracteres"></div>
     <div class="fi"><label>Nome Completo</label><input type="text" id="nu-nome" placeholder="Sd Fulano da Silva"></div>
-    <div class="fi"><label>Perfil</label><select id="nu-role"><option value="user">Usuário</option><option value="admin">Administrador</option></select></div>
+    <div class="fi"><label>Perfil</label><select id="nu-role"><option value="user">Editor (edita tudo)</option><option value="admin">Administrador (edita + gerencia usuários)</option></select></div>
   </div>
   <div style="display:flex;justify-content:flex-end;margin-top:10px;margin-bottom:18px"><button class="btn btn-cy" onclick="adicionarUsuario()">➕ Cadastrar</button></div>
   <div class="msec">Usuários Cadastrados</div>
@@ -580,12 +580,12 @@ select option{background:var(--s2)}
     <div class="ni" onclick="goTo('os-hist',this)"><span class="ic">✅</span>OS Realizadas</div>
     <div class="ni" onclick="goTo('pastilhas',this)"><span class="ic">🔩</span>Pastilhas</div>
     <div class="ni" onclick="goTo('pneus',this)"><span class="ic">🔧</span>Estoque Pneus</div>
-    <div class="sb-sec">Ações</div>
-    <div class="ni" onclick="openKmModal()"><span class="ic">📍</span>Atualizar KM</div>
-    <div class="ni" onclick="openCad()"><span class="ic">➕</span>Nova Viatura</div>
-    <div class="ni" onclick="openOsModal()"><span class="ic">📝</span>Nova OS</div>
-    <div class="ni" onclick="openPneu()"><span class="ic">📦</span>Novo Pneu</div>
-    <div class="ni" onclick="openRelatorio()"><span class="ic">📄</span>Relatórios</div>
+    <div class="sb-sec sb-acoes-group">Ações</div>
+    <div class="ni sb-acoes-group" onclick="openKmModal()"><span class="ic">📍</span>Atualizar KM</div>
+    <div class="ni sb-acoes-group" onclick="openCad()"><span class="ic">➕</span>Nova Viatura</div>
+    <div class="ni sb-acoes-group" onclick="openOsModal()"><span class="ic">📝</span>Nova OS</div>
+    <div class="ni sb-acoes-group" onclick="openPneu()"><span class="ic">📦</span>Novo Pneu</div>
+    <div class="ni sb-acoes-group" onclick="openRelatorio()"><span class="ic">📄</span>Relatórios</div>
     <div class="ni" id="ni-users" onclick="openUsers()" style="display:none"><span class="ic">👥</span>Usuários</div>
   </div>
   <div class="sb-foot"><span id="sb-dt"></span><span class="online">ATIVO</span></div>
@@ -1239,6 +1239,7 @@ function renderOsHist(){
 }
 
 function openOsModal(idx){
+  if(blockSeVisitante())return;
   editOsIdx=(idx!==undefined)?idx:null;
   document.getElementById('os-modal-title').textContent=editOsIdx!==null?'Editar OS Prima':'Nova OS Prima';
   const sel=document.getElementById('os-vtr-sel');
@@ -1291,13 +1292,14 @@ function salvarOs(){
 }
 
 function entregarOs(idx){
+  if(blockSeVisitante())return;
   if(!confirm('Marcar esta OS como Entregue/Realizada?'))return;
   ordens[idx].statusOs='ENTREGUE';
   ordens[idx].dtEntrega=hoje();
   save();renderOs();renderOsHist();renderDash();toast('✅ OS marcada como entregue!');
 }
 function editarOs(idx){openOsModal(idx);}
-function excluirOs(idx){if(!confirm('Excluir esta OS?'))return;ordens.splice(idx,1);save();renderOs();renderOsHist();renderDash();}
+function excluirOs(idx){if(blockSeVisitante())return;if(!confirm('Excluir esta OS?'))return;ordens.splice(idx,1);save();renderOs();renderOsHist();renderDash();}
 
 // ══════ PASTILHAS ══════════════════════════════════════════════
 function pastStatus(pct,dtpast,durpast){
@@ -1356,6 +1358,7 @@ function renderPastilhas(){
 }
 
 function openPastModal(){
+  if(blockSeVisitante())return;
   document.getElementById('past-modal-sub').textContent='Registrar nova troca de pastilhas';
   const sel=document.getElementById('past-vtr-sel');
   sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.placa} — ${v.marca} ${v.modelo}</option>`).join('');
@@ -1366,6 +1369,7 @@ function openPastModal(){
   openOv('ov-past');
 }
 function openPastModalVtr(vId){
+  if(blockSeVisitante())return;
   openPastModal();
   document.getElementById('past-vtr-sel').value=vId;
   const v=vtr.find(x=>x.id==vId);
@@ -1387,13 +1391,14 @@ function renderPneus(){
   if(!pneus.length){g.innerHTML='<div class="empty-c" style="grid-column:1/-1"><span>🔧</span>Estoque vazio</div>';return;}
   g.innerHTML=pneus.map((p,i)=>`<div class="pc"><div class="pc-h"><div><div class="pc-brand">${p.marca}</div><div class="pc-mod">${p.mod}</div></div><div class="qty-b"><div class="qty-n">${p.qty}</div><div class="qty-l">UNID.</div></div></div><div class="pc-tags"><span class="tag">⭕ Aro ${p.aro}</span><span class="tag">📐 ${p.med}</span><span class="tag">🚔 ${p.vtr}</span></div><div style="display:flex;gap:6px"><button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="editPneu(${i})">✏ Editar</button><button class="btn btn-sm btn-rd" onclick="delPneu(${i})">🗑</button></div></div>`).join('');
 }
-function openPneu(){editPneuI=null;['p-marca','p-mod','p-med','p-aro','p-vtr','p-qty'].forEach(id=>document.getElementById(id).value='');openOv('ov-pneu');}
+function openPneu(){if(blockSeVisitante())return;editPneuI=null;['p-marca','p-mod','p-med','p-aro','p-vtr','p-qty'].forEach(id=>document.getElementById(id).value='');openOv('ov-pneu');}
 function salvarPneu(){const p={marca:document.getElementById('p-marca').value,mod:document.getElementById('p-mod').value,med:document.getElementById('p-med').value,aro:document.getElementById('p-aro').value,vtr:document.getElementById('p-vtr').value,qty:parseInt(document.getElementById('p-qty').value)||0};if(!p.marca){alert('Informe a marca.');return;}if(editPneuI!==null){pneus[editPneuI]=p;editPneuI=null;}else pneus.push(p);save();closeOv('ov-pneu');renderPneus();toast('✅ Pneu salvo!');}
 function editPneu(i){editPneuI=i;const p=pneus[i];['marca','mod','med','aro','vtr','qty'].forEach(k=>{document.getElementById('p-'+k).value=p[k]||'';});openOv('ov-pneu');}
 function delPneu(i){if(!confirm('Excluir?'))return;pneus.splice(i,1);save();renderPneus();}
 
 // ══════ CRUD VIATURA ═══════════════════════════════════════════
 function openCad(){
+  if(blockSeVisitante())return;
   editId=null;
   document.getElementById('cad-title').textContent='Nova Viatura';
   ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-km','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -1416,6 +1421,7 @@ function salvarCad(){
   save();closeOv('ov-cad');renderVtr();renderDash();toast('✅ Viatura salva!');
 }
 function openEdit(id){
+  if(blockSeVisitante())return;
   const v=vtr.find(x=>x.id===id);if(!v)return;editId=id;
   document.getElementById('edit-sub').textContent=`${v.marca} ${v.modelo} · ${v.placa}`;
   document.getElementById('e-status').value=v.status;
@@ -1448,12 +1454,13 @@ function salvarEdit(){
   v.durpast=parseInt(document.getElementById('e-durpast').value)||12;
   save();closeOv('ov-edit');renderVtr();renderDash();renderPastilhas();toast('✅ Viatura atualizada!');
 }
-function excluir(id){if(!confirm('Excluir esta viatura?'))return;vtr=vtr.filter(x=>x.id!==id);save();renderVtr();renderDash();}
+function excluir(id){if(blockSeVisitante())return;if(!confirm('Excluir esta viatura?'))return;vtr=vtr.filter(x=>x.id!==id);save();renderVtr();renderDash();}
 
 // ══════ KM MODAL ═══════════════════════════════════════════════
 function openKmModal(){
+  if(blockSeVisitante())return;
   document.getElementById('km-dt').textContent='Data: '+new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('kml').innerHTML=vtr.filter(v=>v.status!=='BAIXADA').map(v=>`<div class="kmr"><span class="kmr-p">${v.placa}</span><span class="kmr-n">${v.marca} ${v.modelo}</span><span class="kmr-c">Atual: ${v.km.toLocaleString()}</span><input type="number" id="km-${v.id}" value="${v.km}" min="0"></div>`).join('');
+  document.getElementById('kml').innerHTML=vtr.filter(v=>v.status!=='BAIXADA').map(v=>`<div class="kmr"><span class="kmr-p">${v.pref||v.placa}</span><span class="kmr-n">${v.marca} ${v.modelo} <span style="color:var(--txt3);font-size:9px;font-family:var(--mono)">${v.placa}</span></span><span class="kmr-c">Atual: ${v.km.toLocaleString()}</span><input type="number" id="km-${v.id}" value="${v.km}" min="0"></div>`).join('');
   openOv('ov-km');
 }
 function salvarKm(){
@@ -1462,7 +1469,7 @@ function salvarKm(){
 }
 
 // ══════ RELATÓRIOS ═════════════════════════════════════════════
-function openRelatorio(){openOv('ov-rpt');}
+function openRelatorio(){if(blockSeVisitante())return;openOv('ov-rpt');}
 function getFiltrados(){
   const fs=document.getElementById('rpt-fst').value,ft=document.getElementById('rpt-ftp').value,fo=document.getElementById('rpt-fos').value;
   return vtr.filter(v=>(!fs||v.status===fs)&&(!ft||v.tipo.includes(ft))&&(!fo||(fo==='com'?!!v.os:!v.os)));
@@ -1661,36 +1668,58 @@ function aplicarAcessoVisitante(){
   document.getElementById('tu-dot').className = 'tu-dot';
   document.getElementById('ni-users').style.display='none';
   document.getElementById('topbtn').style.display='none';
-  // disable non-dash nav items visually
+  // Esconde toda a seção "Ações" da sidebar
+  document.querySelectorAll('.sb-acoes-group').forEach(el=>{ el.style.display='none'; });
+  // Esconde itens de ação do mobile-more
+  document.querySelectorAll('.mn-acao').forEach(el=>{ el.style.display='none'; });
+  // Esmaecer itens de nav não-dashboard (Viaturas, OS, Pastilhas, Pneus)
   document.querySelectorAll('.ni').forEach(n=>{
     const txt=n.textContent;
-    if(!txt.includes('Dashboard'))n.style.opacity='.35';
+    if(!txt.includes('Dashboard')&&n.style.display!=='none')n.style.opacity='.4';
   });
-  // force dashboard
+  // Trocar texto "Sair" → "Login" no usuário do topbar
+  const tuEl=document.getElementById('tb-user');
+  if(tuEl){
+    tuEl.innerHTML='<div class="tu-dot" id="tu-dot"></div><span id="tu-name">Visitante</span> · Entrar';
+    tuEl.setAttribute('onclick','voltarLogin()');
+  }
+  // Forçar dashboard
   goTo('dash', document.querySelector('.ni'));
-  // show guest banner in content
+  // Banner de acesso restrito
   const content=document.querySelector('.content');
   if(!document.getElementById('guest-banner')){
     const banner=document.createElement('div');
     banner.id='guest-banner';
     banner.className='guest-banner';
-    banner.innerHTML='🔒 <strong>Acesso restrito.</strong> Você está visualizando apenas o dashboard. <a style="color:var(--cyan);cursor:pointer;margin-left:8px" onclick="voltarLogin()">Fazer login para acesso completo</a>';
+    banner.innerHTML='🔒 <strong>Modo somente visualização.</strong> Você está vendo o dashboard como visitante. Para editar viaturas, OS, KM e mais, <a style="color:var(--cyan);cursor:pointer;font-weight:700;text-decoration:underline" onclick="voltarLogin()">faça login com sua conta de Editor →</a>';
     content.insertBefore(banner, content.firstChild);
   }
   applyLayout();
-  // Load data for visitor too (read-only view)
   loadFromFirestore().then(ok => {
     renderDash();
     if(ok) startRealtimeSync();
   });
   if(isMobile()){syncMobileNav('dash');renderFAB('dash');syncMobileBadges();}
-  // block nav clicks for non-dash
+  // Bloquear cliques em nav que não é dashboard
   document.querySelectorAll('.ni').forEach(n=>{
     const orig=n.getAttribute('onclick');
     if(orig && !orig.includes("'dash'")){
-      n.setAttribute('onclick',"if(modoVisitante){voltarLogin();return;}" + (orig||''));
+      n.setAttribute('onclick',"alertVisitante();return false;");
     }
   });
+}
+
+// Guard universal: chamado por toda função de edição quando visitante tenta agir
+function blockSeVisitante(){
+  if(modoVisitante){
+    alertVisitante();
+    return true;
+  }
+  return false;
+}
+function alertVisitante(){
+  alert('🔒 Acesso restrito\n\nVocê está em modo visitante (somente visualização do dashboard).\n\nFaça login com sua conta de Editor para editar viaturas, OS, KM e demais informações.');
+  voltarLogin();
 }
 
 function voltarLogin(){
@@ -1732,7 +1761,7 @@ async function renderUserList(){
         <div class="ur-name">${u.nome}</div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--txt2);margin-top:2px">@${u.user}</div>
       </div>
-      <span class="ur-role ${u.role==='admin'?'ur-admin':'ur-user'}">${u.role==='admin'?'ADMIN':'USUÁRIO'}</span>
+      <span class="ur-role ${u.role==='admin'?'ur-admin':'ur-user'}">${u.role==='admin'?'ADMIN':'EDITOR'}</span>
       ${fixos.find(f=>f.user===u.user)?
         '<span style="font-family:var(--mono);font-size:9px;color:var(--txt3)">FIXO</span>':
         `<button class="btn btn-sm btn-rd" onclick="removerUsuario('${u.user}')">🗑</button>`
