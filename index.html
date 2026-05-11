@@ -726,9 +726,10 @@ select option{background:var(--s2)}
   </div>
   <div class="msec">Situação Operacional</div>
   <div class="fg">
-    <div class="fi"><label>Status</label><select id="f-status"><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Em Manutenção</option></select></div>
+    <div class="fi"><label>Status</label><select id="f-status" onchange="toggleMotivoBaixa()"><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Em Manutenção</option></select></div>
     <div class="fi"><label>Local / Destinação Atual</label><input type="text" id="f-local"></div>
     <div class="fi"><label>Destinação Formal</label><input type="text" id="f-dest"></div>
+    <div class="fi" id="f-motivo-wrap"><label>Motivo da Baixa</label><input type="text" id="f-motivo" placeholder="Ex: Sinistro, mecânica grave, leilão..."></div>
   </div>
   <div class="msec">Pastilhas de Freio</div>
   <div class="fg fg4">
@@ -1079,6 +1080,12 @@ function calcR(p){
 function calcPneuPrx(p){
   const kmUltPneu=parseInt(document.getElementById(p+'-kmultpneu').value)||0;
   document.getElementById(p+'-kmprxpneu').value = kmUltPneu>0 ? kmUltPneu+35000 : '';
+}
+function toggleMotivoBaixa(){
+  const st=document.getElementById('f-status').value;
+  const wrap=document.getElementById('f-motivo-wrap');
+  if(!wrap) return;
+  wrap.style.display = st==='BAIXADA' ? '' : 'none';
 }
 
 // ══════ NAV ════════════════════════════════════════════════════
@@ -1664,7 +1671,7 @@ function openCad(){
   if(blockSeVisitante())return;
   editId=null;
   document.getElementById('cad-title').textContent='Nova Viatura';
-  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast','f-kmultpast','f-kmprxpast','f-kmultpneu','f-kmprxpneu','f-dtpneu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-motivo','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast','f-kmultpast','f-kmprxpast','f-kmultpneu','f-kmprxpneu','f-dtpneu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-status').value='EM CONDIÇÃO';
   document.getElementById('f-pneus').value='100';
   document.getElementById('f-past').value='100';
@@ -1672,6 +1679,7 @@ function openCad(){
   document.getElementById('f-trans').value='AUTOMATICA';
   document.getElementById('f-sit').value='Incorporado';
   document.getElementById('f-durpast').value='12';
+  toggleMotivoBaixa();
   openOv('ov-cad');
 }
 function salvarCad(){
@@ -1685,7 +1693,7 @@ function salvarCad(){
   const kmUltPneu=parseInt(document.getElementById('f-kmultpneu').value)||0;
   const kmPrxPneu=parseInt(document.getElementById('f-kmprxpneu').value) || (kmUltPneu>0 ? kmUltPneu+35000 : 0);
   const dtpneu=document.getElementById('f-dtpneu').value;
-  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,kmUltPast,kmPrxPast,kmUltPneu,kmPrxPneu,dtpneu,sit:document.getElementById('f-sit').value};
+  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,motivoBaixa:document.getElementById('f-motivo').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,kmUltPast,kmPrxPast,kmUltPneu,kmPrxPneu,dtpneu,sit:document.getElementById('f-sit').value};
   if(!v.placa){alert('Informe a placa.');return;}
   const isEdit = !!editId;
   if(isEdit){const i=vtr.findIndex(x=>x.id===editId);if(i>=0)vtr[i]=v;}else vtr.push(v);
@@ -1718,6 +1726,8 @@ function openEdit(id){
   document.getElementById('f-status').value=v.status||'EM CONDIÇÃO';
   document.getElementById('f-local').value=v.local||'';
   document.getElementById('f-dest').value=v.dest||'';
+  document.getElementById('f-motivo').value=v.motivoBaixa||'';
+  toggleMotivoBaixa();
   document.getElementById('f-pneus').value=v.pneus||100;
   document.getElementById('f-past').value=v.past||100;
   document.getElementById('f-dtpast').value=v.dtpast||'';
