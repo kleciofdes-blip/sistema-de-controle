@@ -1519,8 +1519,60 @@ function excluir(id){if(blockSeVisitante())return;if(!confirm('Excluir esta viat
 function openKmModal(){
   if(blockSeVisitante())return;
   document.getElementById('km-dt').textContent='Data: '+new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('kml').innerHTML=vtr.filter(v=>v.status!=='BAIXADA').map(v=>`<div class="kmr"><span class="kmr-p">${v.pref||v.placa}</span><span class="kmr-n">${v.marca} ${v.modelo} <span style="color:var(--txt3);font-size:9px;font-family:var(--mono)">${v.placa}</span></span><span class="kmr-c">Atual: ${v.km.toLocaleString()}</span><input type="number" id="km-${v.id}" value="${v.km}" min="0"></div>`).join('');
+  document.getElementById('kml').innerHTML=vtr.filter(v=>v.status!=='BAIXADA').map(v=>{
+    const rest = v.kmrev>0 ? (v.kmrev - v.km) : null;
+    const restTxt = rest===null ? '—' : (rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`);
+    const restCol = rest===null ? 'var(--txt3)' : rest<0 ? 'var(--red)' : rest<=500 ? 'var(--amber)' : 'var(--green)';
+    return `<div class="kmr">
+      <span class="kmr-p">${v.pref||v.placa}</span>
+      <span class="kmr-n">${v.marca} ${v.modelo} <span style="color:var(--txt3);font-size:9px;font-family:var(--mono)">${v.placa}</span></span>
+      <span class="kmr-c" style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        <span>Atual: ${v.km.toLocaleString()}</span>
+        <span id="prev-${v.id}" style="font-size:9px;color:${restCol};font-weight:700">Restante: ${restTxt}</span>
+      </span>
+      <input type="number" id="km-${v.id}" value="${v.km}" min="0" oninput="atualizarPreviewKm(${v.id})">
+    </div>`;
+  }).join('');
   openOv('ov-km');
+}
+
+// Preview ao vivo: mostra novo KM restante + próxima revisão conforme digita
+function atualizarPreviewKm(vid){
+  const v = vtr.find(x=>x.id===vid);
+  if(!v) return;
+  const inp = document.getElementById('km-'+vid);
+  const prev = document.getElementById('prev-'+vid);
+  if(!inp || !prev) return;
+  const raw = (inp.value||'').toString().replace(/\D/g,'');
+  if(raw === ''){ // restaura preview original
+    const rest = v.kmrev>0 ? (v.kmrev - v.km) : null;
+    if(rest===null){ prev.textContent='Restante: —'; prev.style.color='var(--txt3)'; }
+    else {
+      const restTxt = rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`;
+      prev.textContent = 'Restante: ' + restTxt;
+      prev.style.color = rest<0?'var(--red)':rest<=500?'var(--amber)':'var(--green)';
+    }
+    return;
+  }
+  const nv = parseInt(raw,10);
+  if(isNaN(nv)) return;
+  // Calcula próximo kmrev (se passou da revisão, soma intervalo)
+  let novoKmrev = v.kmrev;
+  if(v.kmrev > 0 && nv > v.kmrev){
+    novoKmrev = nv + (v.iv || 5000);
+  }
+  const rest = novoKmrev > 0 ? (novoKmrev - nv) : null;
+  if(rest === null){
+    prev.innerHTML = '<span style="color:var(--txt3)">Sem revisão</span>';
+    return;
+  }
+  const restTxt = rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`;
+  const col = rest<0?'var(--red)':rest<=500?'var(--amber)':'var(--green)';
+  let txt = `<span style="color:${col}">Novo restante: ${restTxt}</span>`;
+  if(novoKmrev !== v.kmrev){
+    txt += `<br><span style="color:var(--cyan);font-size:8px">↻ Próx. rev: ${novoKmrev.toLocaleString()} km</span>`;
+  }
+  prev.innerHTML = txt;
 }
 function salvarKm(){
   if(blockSeVisitante())return;
