@@ -203,6 +203,29 @@ td{padding:10px 13px;vertical-align:middle}
 .past-info-lbl{font-family:var(--mono);font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
 .past-info-val{font-size:12px;font-weight:600;color:var(--txt)}
 .past-alerta{font-size:10px;font-family:var(--mono);padding:5px 10px;border-radius:5px;text-align:center;margin-top:12px;font-weight:700;letter-spacing:.5px}
+.rev-banner{background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(245,158,11,.08));border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:20px;box-shadow:var(--shadow-sm)}
+.rev-banner.urgente{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));border:1px solid rgba(239,68,68,.3)}
+.rev-banner-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.rev-banner-t{font-size:16px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:10px}
+.rev-banner-t .rb-icon{font-size:24px}
+.rev-banner-counts{display:flex;gap:14px;font-size:12px;font-weight:700}
+.rev-banner-counts .rbc{padding:5px 12px;border-radius:20px;display:flex;align-items:center;gap:6px}
+.rev-banner-counts .rbc-r{background:rgba(239,68,68,.12);color:var(--red)}
+.rev-banner-counts .rbc-y{background:rgba(245,158,11,.12);color:var(--amber)}
+.rev-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.rev-it{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
+.rev-it:hover{border-color:var(--cyan);transform:translateY(-1px);box-shadow:0 4px 12px rgba(2,132,199,.1)}
+.rev-it-l{width:4px;align-self:stretch;border-radius:3px}
+.rev-it-l.r{background:var(--red)}
+.rev-it-l.y{background:var(--amber)}
+.rev-it-b{flex:1;min-width:0}
+.rev-it-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.rev-it-pref{background:var(--cyan);color:#fff;padding:2px 8px;border-radius:5px;font-weight:700;font-size:11px;font-family:var(--mono)}
+.rev-it-modelo{font-size:11px;color:var(--txt2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rev-it-info{font-size:10px;color:var(--txt3);font-family:var(--mono)}
+.rev-it-st{font-weight:700;font-size:13px;font-family:var(--mono);white-space:nowrap}
+.rev-it-st.r{color:var(--red)}
+.rev-it-st.y{color:var(--amber)}
 .past-actions{display:flex;gap:7px;margin-top:10px}
 /* OS CARDS */
 .os-grid-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px}
@@ -604,6 +627,7 @@ select option{background:var(--s2)}
 
     <div class="page on" id="p-dash">
       <div class="sg" id="sg"></div>
+      <div id="rev-alert-banner"></div>
       <div class="dr">
         <div class="dc"><div class="dc-h"><span class="dc-t">Status da Frota</span><span class="dc-b" id="dob-s">—</span></div><div class="chart-canvas-wrap"><canvas id="chart-donut"></canvas></div></div>
         <div class="dc"><div class="dc-h"><span class="dc-t">Frota por Tipo</span><span class="dc-b" id="dob-t">—</span></div><div class="chart-canvas-wrap"><canvas id="chart-bar"></canvas></div></div>
@@ -1062,7 +1086,57 @@ function renderDash(){
     <div class="sc c-am"><div class="sc-gl"></div><div class="sc-lb">Manutenção</div><div class="sc-vl">${mn}</div><div class="sc-sb">Em oficina</div></div>
     <div class="sc c-or"><div class="sc-gl"></div><div class="sc-lb">OS Abertas</div><div class="sc-vl">${osAb}</div><div class="sc-sb">Em processo</div></div>
     <div class="sc c-am"><div class="sc-gl"></div><div class="sc-lb">Rev. Urgente</div><div class="sc-vl">${rv+rp}</div><div class="sc-sb">${rv} vencida / ${rp} próxima</div></div>`;
-  renderDonut(em,bx,mn,n);renderBar();renderAlerts();renderRevChart();renderOsChart();syncMobileBadges();
+  renderDonut(em,bx,mn,n);renderBar();renderAlerts();renderRevAlerts();renderRevChart();renderOsChart();syncMobileBadges();
+}
+
+function renderRevAlerts(){
+  const el=document.getElementById('rev-alert-banner');
+  if(!el) return;
+  const vencidas=[], proximas=[];
+  vtr.forEach(v=>{
+    if(v.status==='BAIXADA') return;
+    const km=parseInt(v.km,10)||0;
+    const kmrev=parseInt(v.kmrev,10)||0;
+    if(kmrev<=0) return;
+    const d=kmrev-km;
+    if(d<0) vencidas.push({v,d});
+    else if(d<=500) proximas.push({v,d});
+  });
+  vencidas.sort((a,b)=>a.d-b.d);
+  proximas.sort((a,b)=>a.d-b.d);
+  if(!vencidas.length && !proximas.length){
+    el.innerHTML='';
+    return;
+  }
+  const urgente=vencidas.length>0;
+  const itens=[...vencidas,...proximas].slice(0,8).map(({v,d})=>{
+    const cls=d<0?'r':'y';
+    const stTxt=d<0?`⚠ ${Math.abs(d).toLocaleString()} km VENCIDO`:`≈ ${d.toLocaleString()} km`;
+    return `<div class="rev-it" onclick="navigate('vtr');setTimeout(()=>openEdit(${v.id}),250)">
+      <div class="rev-it-l ${cls}"></div>
+      <div class="rev-it-b">
+        <div class="rev-it-top">
+          <span class="rev-it-pref">${v.pref||v.placa}</span>
+          <span class="rev-it-modelo">${v.marca} ${v.modelo}</span>
+        </div>
+        <div class="rev-it-info">KM ${(v.km||0).toLocaleString()} / Próx ${(v.kmrev||0).toLocaleString()}</div>
+      </div>
+      <div class="rev-it-st ${cls}">${stTxt}</div>
+    </div>`;
+  }).join('');
+  const restante=(vencidas.length+proximas.length)-8;
+  const maisLink=restante>0?`<div style="margin-top:10px;text-align:center;font-size:11px;color:var(--txt2)">+ ${restante} outra(s) — <a onclick="navigate('vtr')" style="color:var(--cyan);cursor:pointer;text-decoration:underline">ver todas</a></div>`:'';
+  el.innerHTML=`<div class="rev-banner ${urgente?'urgente':''}">
+    <div class="rev-banner-h">
+      <div class="rev-banner-t"><span class="rb-icon">${urgente?'🔴':'🟡'}</span>Alerta de Revisão</div>
+      <div class="rev-banner-counts">
+        ${vencidas.length?`<span class="rbc rbc-r">⚠ ${vencidas.length} vencida${vencidas.length>1?'s':''}</span>`:''}
+        ${proximas.length?`<span class="rbc rbc-y">⏱ ${proximas.length} próxima${proximas.length>1?'s':''}</span>`:''}
+      </div>
+    </div>
+    <div class="rev-list">${itens}</div>
+    ${maisLink}
+  </div>`;
 }
 
 // ══ Chart.js helpers ════════════════════════════════════════════
