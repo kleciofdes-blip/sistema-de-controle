@@ -893,14 +893,51 @@ function hideLoading(){
 }
 
 // ── SAVE TO FIRESTORE ──────────────────────────────────────────
-async function save(){
+let _saving = false;
+function setDbStatus(state){
+  const st = document.getElementById('db-status');
+  if(!st) return;
+  if(state==='saving'){
+    st.innerHTML='⟳ salvando...';
+    st.style.color='var(--cyan)';
+  } else if(state==='saved'){
+    st.innerHTML='<span class="db-status-dot"></span>online · salvo';
+    st.style.color='var(--green)';
+    setTimeout(()=>{ if(!_saving){ st.innerHTML='<span class="db-status-dot"></span>online'; st.style.color=''; } }, 2500);
+  } else if(state==='error'){
+    st.innerHTML='⚠ erro ao salvar';
+    st.style.color='var(--red)';
+  } else if(state==='offline'){
+    st.innerHTML='⚠ offline';
+    st.style.color='var(--amber)';
+  }
+}
+
+async function save(retryCount){
+  retryCount = retryCount || 0;
+  _saving = true;
+  setDbStatus('saving');
   try {
-    await db.collection('dados').doc('viaturas').set({lista: vtr});
-    await db.collection('dados').doc('pneus').set({lista: pneus});
-    await db.collection('dados').doc('ordens').set({lista: ordens});
+    await Promise.all([
+      db.collection('dados').doc('viaturas').set({lista: vtr, atualizadoEm: new Date().toISOString(), por: (sessao && sessao.user) || 'sistema'}),
+      db.collection('dados').doc('pneus').set({lista: pneus, atualizadoEm: new Date().toISOString()}),
+      db.collection('dados').doc('ordens').set({lista: ordens, atualizadoEm: new Date().toISOString()})
+    ]);
+    _saving = false;
+    setDbStatus('saved');
+    return true;
   } catch(e) {
     console.error('Erro ao salvar:', e);
-    toast('⚠ Erro ao salvar no servidor!');
+    _saving = false;
+    // Retry automático até 2 vezes em caso de erro de rede
+    if(retryCount < 2){
+      console.log('Tentando salvar novamente em 1.5s... (tentativa '+(retryCount+1)+'/2)');
+      await new Promise(r=>setTimeout(r,1500));
+      return save(retryCount+1);
+    }
+    setDbStatus('error');
+    toast('⚠ Erro ao salvar! Verifique sua conexão. Os dados estão na tela mas podem não ter sido sincronizados.');
+    return false;
   }
 }
 
@@ -927,17 +964,15 @@ async function loadFromFirestore(){
 
     _dbLoaded = true;
     hideLoading();
-    const st=document.getElementById('db-status');if(st)st.innerHTML='<span class="db-status-dot"></span>online';
+    setDbStatus('saved');
     return true;
   } catch(e) {
     console.error('Firestore error:', e);
     hideLoading();
-    // Fallback to D0 if offline
     if(vtr.length === 0) vtr = JSON.parse(JSON.stringify(D0));
     _dbLoaded = true;
-    const st2=document.getElementById('db-status');if(st2)st2.style.color='var(--amber)';
-    if(st2)st2.textContent='⚠ offline';
-    toast('⚠ Modo offline — dados locais');
+    setDbStatus('offline');
+    toast('⚠ Modo offline — alterações não serão sincronizadas. Verifique a conexão.');
     return false;
   }
 }
@@ -1288,7 +1323,8 @@ function salvarOs(){
     dtEntrega:editOsIdx!==null?(ordens[editOsIdx].dtEntrega||''):''
   };
   if(editOsIdx!==null)ordens[editOsIdx]=o;else ordens.push(o);
-  save();closeOv('ov-os');renderOs();renderOsHist();renderDash();toast('✅ OS salva com sucesso!');
+  closeOv('ov-os');renderOs();renderOsHist();renderDash();
+  save().then(ok=>{ if(ok) toast('✅ OS salva no servidor!'); });
 }
 
 function entregarOs(idx){
@@ -1296,10 +1332,11 @@ function entregarOs(idx){
   if(!confirm('Marcar esta OS como Entregue/Realizada?'))return;
   ordens[idx].statusOs='ENTREGUE';
   ordens[idx].dtEntrega=hoje();
-  save();renderOs();renderOsHist();renderDash();toast('✅ OS marcada como entregue!');
+  renderOs();renderOsHist();renderDash();
+  save().then(ok=>{ if(ok) toast('✅ OS marcada como entregue e sincronizada!'); });
 }
 function editarOs(idx){openOsModal(idx);}
-function excluirOs(idx){if(blockSeVisitante())return;if(!confirm('Excluir esta OS?'))return;ordens.splice(idx,1);save();renderOs();renderOsHist();renderDash();}
+function excluirOs(idx){if(blockSeVisitante())return;if(!confirm('Excluir esta OS?'))return;ordens.splice(idx,1);renderOs();renderOsHist();renderDash();save().then(ok=>{if(ok)toast('✅ OS removida do servidor');});}
 
 // ══════ PASTILHAS ══════════════════════════════════════════════
 function pastStatus(pct,dtpast,durpast){
@@ -1381,7 +1418,8 @@ function salvarPast(){
   v.dtpast=document.getElementById('past-data').value;
   v.durpast=parseInt(document.getElementById('past-dur').value)||12;
   v.past=parseInt(document.getElementById('past-pct').value)||100;
-  save();closeOv('ov-past');renderPastilhas();renderDash();toast('🔩 Troca de pastilha registrada!');
+  closeOv('ov-past');renderPastilhas();renderDash();
+  save().then(ok=>{ if(ok) toast('🔩 Troca de pastilha registrada e sincronizada!'); });
 }
 
 // ══════ PNEUS ══════════════════════════════════════════════════
@@ -1392,9 +1430,9 @@ function renderPneus(){
   g.innerHTML=pneus.map((p,i)=>`<div class="pc"><div class="pc-h"><div><div class="pc-brand">${p.marca}</div><div class="pc-mod">${p.mod}</div></div><div class="qty-b"><div class="qty-n">${p.qty}</div><div class="qty-l">UNID.</div></div></div><div class="pc-tags"><span class="tag">⭕ Aro ${p.aro}</span><span class="tag">📐 ${p.med}</span><span class="tag">🚔 ${p.vtr}</span></div><div style="display:flex;gap:6px"><button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="editPneu(${i})">✏ Editar</button><button class="btn btn-sm btn-rd" onclick="delPneu(${i})">🗑</button></div></div>`).join('');
 }
 function openPneu(){if(blockSeVisitante())return;editPneuI=null;['p-marca','p-mod','p-med','p-aro','p-vtr','p-qty'].forEach(id=>document.getElementById(id).value='');openOv('ov-pneu');}
-function salvarPneu(){const p={marca:document.getElementById('p-marca').value,mod:document.getElementById('p-mod').value,med:document.getElementById('p-med').value,aro:document.getElementById('p-aro').value,vtr:document.getElementById('p-vtr').value,qty:parseInt(document.getElementById('p-qty').value)||0};if(!p.marca){alert('Informe a marca.');return;}if(editPneuI!==null){pneus[editPneuI]=p;editPneuI=null;}else pneus.push(p);save();closeOv('ov-pneu');renderPneus();toast('✅ Pneu salvo!');}
-function editPneu(i){editPneuI=i;const p=pneus[i];['marca','mod','med','aro','vtr','qty'].forEach(k=>{document.getElementById('p-'+k).value=p[k]||'';});openOv('ov-pneu');}
-function delPneu(i){if(!confirm('Excluir?'))return;pneus.splice(i,1);save();renderPneus();}
+function salvarPneu(){const p={marca:document.getElementById('p-marca').value,mod:document.getElementById('p-mod').value,med:document.getElementById('p-med').value,aro:document.getElementById('p-aro').value,vtr:document.getElementById('p-vtr').value,qty:parseInt(document.getElementById('p-qty').value)||0};if(!p.marca){alert('Informe a marca.');return;}if(editPneuI!==null){pneus[editPneuI]=p;editPneuI=null;}else pneus.push(p);closeOv('ov-pneu');renderPneus();save().then(ok=>{if(ok)toast('✅ Pneu sincronizado no servidor!');});}
+function editPneu(i){if(blockSeVisitante())return;editPneuI=i;const p=pneus[i];['marca','mod','med','aro','vtr','qty'].forEach(k=>{document.getElementById('p-'+k).value=p[k]||'';});openOv('ov-pneu');}
+function delPneu(i){if(blockSeVisitante())return;if(!confirm('Excluir?'))return;pneus.splice(i,1);renderPneus();save().then(ok=>{if(ok)toast('✅ Pneu removido do servidor');});}
 
 // ══════ CRUD VIATURA ═══════════════════════════════════════════
 function openCad(){
@@ -1417,8 +1455,10 @@ function salvarCad(){
   const kmrev=parseInt(document.getElementById('f-kmrev').value)||(km+iv);
   const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,sit:document.getElementById('f-sit').value};
   if(!v.placa){alert('Informe a placa.');return;}
-  if(editId){const i=vtr.findIndex(x=>x.id===editId);if(i>=0)vtr[i]=v;}else vtr.push(v);
-  save();closeOv('ov-cad');renderVtr();renderDash();toast('✅ Viatura salva!');
+  const isEdit = !!editId;
+  if(isEdit){const i=vtr.findIndex(x=>x.id===editId);if(i>=0)vtr[i]=v;}else vtr.push(v);
+  closeOv('ov-cad');renderVtr();renderDash();
+  save().then(ok=>{ if(ok) toast(isEdit ? '✅ Viatura atualizada no servidor!' : '✅ Viatura cadastrada no servidor!'); });
 }
 function openEdit(id){
   if(blockSeVisitante())return;
@@ -1452,9 +1492,10 @@ function salvarEdit(){
   v.dtprev=document.getElementById('e-dtprev').value;
   v.dtpast=document.getElementById('e-dtpast').value;
   v.durpast=parseInt(document.getElementById('e-durpast').value)||12;
-  save();closeOv('ov-edit');renderVtr();renderDash();renderPastilhas();toast('✅ Viatura atualizada!');
+  closeOv('ov-edit');renderVtr();renderDash();renderPastilhas();
+  save().then(ok=>{ if(ok) toast('✅ Viatura atualizada no servidor!'); });
 }
-function excluir(id){if(blockSeVisitante())return;if(!confirm('Excluir esta viatura?'))return;vtr=vtr.filter(x=>x.id!==id);save();renderVtr();renderDash();}
+function excluir(id){if(blockSeVisitante())return;if(!confirm('Excluir esta viatura?'))return;vtr=vtr.filter(x=>x.id!==id);renderVtr();renderDash();save().then(ok=>{if(ok)toast('✅ Viatura removida do servidor');});}
 
 // ══════ KM MODAL ═══════════════════════════════════════════════
 function openKmModal(){
@@ -1464,8 +1505,10 @@ function openKmModal(){
   openOv('ov-km');
 }
 function salvarKm(){
-  vtr.forEach(v=>{const inp=document.getElementById('km-'+v.id);if(!inp)return;const nv=parseInt(inp.value)||v.km;if(nv>=v.km){if(v.kmrev>0&&nv>v.kmrev)v.kmrev=nv+v.iv;v.km=nv;}});
-  save();closeOv('ov-km');renderVtr();renderDash();toast('✅ KM atualizado!');
+  let alterados = 0;
+  vtr.forEach(v=>{const inp=document.getElementById('km-'+v.id);if(!inp)return;const nv=parseInt(inp.value)||v.km;if(nv>=v.km){if(nv!==v.km)alterados++;if(v.kmrev>0&&nv>v.kmrev)v.kmrev=nv+v.iv;v.km=nv;}});
+  closeOv('ov-km');renderVtr();renderDash();
+  save().then(ok=>{ if(ok) toast('✅ '+alterados+' KM atualizado(s) e sincronizado(s)!'); });
 }
 
 // ══════ RELATÓRIOS ═════════════════════════════════════════════
