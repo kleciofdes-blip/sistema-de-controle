@@ -1556,22 +1556,13 @@ function atualizarPreviewKm(vid){
   }
   const nv = parseInt(raw,10);
   if(isNaN(nv)) return;
-  // Calcula próximo kmrev (se passou da revisão, soma intervalo)
-  let novoKmrev = v.kmrev;
-  if(v.kmrev > 0 && nv > v.kmrev){
-    novoKmrev = nv + (v.iv || 5000);
-  }
-  const rest = novoKmrev > 0 ? (novoKmrev - nv) : null;
-  if(rest === null){
-    prev.innerHTML = '<span style="color:var(--txt3)">Sem revisão</span>';
-    return;
-  }
-  const restTxt = rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`;
-  const col = rest<0?'var(--red)':rest<=500?'var(--amber)':'var(--green)';
-  let txt = `<span style="color:${col}">Novo restante: ${restTxt}</span>`;
-  if(novoKmrev !== v.kmrev){
-    txt += `<br><span style="color:var(--cyan);font-size:8px">↻ Próx. rev: ${novoKmrev.toLocaleString()} km</span>`;
-  }
+  // Próxima revisão = sempre KM atual + intervalo (mesma lógica do salvarKm)
+  const intervalo = v.iv || 5000;
+  const novoKmrev = nv + intervalo;
+  const rest = novoKmrev - nv; // = intervalo
+  const restTxt = `+${rest.toLocaleString()} km`;
+  let txt = `<span style="color:var(--green)">Novo restante: ${restTxt}</span>`;
+  txt += `<br><span style="color:var(--cyan);font-size:9px">↻ Próx. rev: ${novoKmrev.toLocaleString()} km</span>`;
   prev.innerHTML = txt;
 }
 function salvarKm(){
@@ -1585,21 +1576,13 @@ function salvarKm(){
     const nv = parseInt(raw, 10);
     if(isNaN(nv) || nv < 0){ ignorados.push(v.pref||v.placa); return; }
     if(nv === v.km) return; // sem mudança
-    // Atualiza o KM da viatura (aceita pra cima ou pra baixo - permite correção)
-    const kmAntigo = v.km;
+    // Atualiza o KM (aceita pra cima ou pra baixo)
     v.km = nv;
     alterados++;
-    // Recalcula KM da próxima revisão automaticamente se passou
-    if(v.kmrev > 0 && nv > v.kmrev){
-      const intervalo = v.iv || 5000;
-      v.kmrev = nv + intervalo;
-      regerados++;
-    }
-    // Se reduzir KM (correção pra menor) e tiver kmrev distorcido, ajusta
-    if(v.kmrev > 0 && nv < v.km && (v.kmrev - nv) > (v.iv * 3)){
-      v.kmrev = nv + (v.iv || 5000);
-      regerados++;
-    }
+    // SEMPRE recalcula a próxima revisão = KM atual + intervalo padrão
+    const intervalo = v.iv || 5000;
+    v.kmrev = nv + intervalo;
+    regerados++;
   });
 
   closeOv('ov-km');
