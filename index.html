@@ -788,6 +788,7 @@ select option{background:var(--s2)}
     <div class="fi"><label>Tipo de OS</label><select id="os-tipo" onchange="toggleTipoCman()">
       <option value="PRIME">OS Prime</option>
       <option value="CMAN">OS CMAN</option>
+      <option value="PRIME+CMAN">OS Prime + CMAN (juntas)</option>
     </select></div>
     <div class="fi" id="os-cman-wrap" style="display:none"><label>Tipo de Serviço CMAN</label><select id="os-cman-servico" onchange="toggleRefPrime()">
       <option value="GARANTIA">Garantia</option>
@@ -1461,8 +1462,9 @@ function osCard(o,idx,hist){
   const col=OS_STATUS_COL[o.statusOs]||'#7a8ba0';
   const servs=(o.servicos||[]);
   const tipo=o.tipoOs||'PRIME';
-  const tipoCor = tipo==='CMAN' ? '#a855f7' : 'var(--cyan)';
-  const tipoLabel = tipo==='CMAN' ? `CMAN${o.tipoCmanServico ? ' · '+o.tipoCmanServico.replace('+CORRETIVA',' + CORRETIVA') : ''}` : 'PRIME';
+  const tipoCor = tipo==='CMAN' ? '#a855f7' : tipo==='PRIME+CMAN' ? '#0ea5e9' : 'var(--cyan)';
+  const servicoTxt = o.tipoCmanServico ? ' · '+o.tipoCmanServico.replace('+CORRETIVA',' + CORRETIVA') : '';
+  const tipoLabel = tipo==='CMAN' ? `CMAN${servicoTxt}` : tipo==='PRIME+CMAN' ? `PRIME + CMAN${servicoTxt}` : 'PRIME';
   const refBadge = o.osReferenciaPrime
     ? `<span style="background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3);font-family:var(--mono);font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px" title="Referência à OS Prime ${o.osReferenciaPrime}">↩ Ref: ${o.osReferenciaPrime}</span>`
     : '';
@@ -1549,9 +1551,12 @@ function openOsModal(idx){
   openOv('ov-os');
 }
 
+function tipoOsTemCman(tipo){
+  return tipo==='CMAN' || tipo==='PRIME+CMAN';
+}
 function toggleTipoCman(){
   const tipo=document.getElementById('os-tipo').value;
-  document.getElementById('os-cman-wrap').style.display = tipo==='CMAN' ? '' : 'none';
+  document.getElementById('os-cman-wrap').style.display = tipoOsTemCman(tipo) ? '' : 'none';
   toggleRefPrime();
   atualizarTituloOs();
 }
@@ -1560,9 +1565,8 @@ function toggleRefPrime(){
   const servico=document.getElementById('os-cman-servico').value;
   const wrap=document.getElementById('os-ref-prime-wrap');
   const lbl=document.getElementById('os-ref-prime-label');
-  if(tipo!=='CMAN'){ wrap.style.display='none'; return; }
+  if(!tipoOsTemCman(tipo)){ wrap.style.display='none'; return; }
   wrap.style.display='';
-  // Label varia conforme o tipo de serviço (garantia é obrigatório, demais é opcional)
   if(servico==='GARANTIA'){
     lbl.innerHTML='OS Prime de Referência <span style="color:var(--red)">*</span> <span style="font-size:10px;color:var(--txt3);font-weight:400">(obrigatório p/ garantia)</span>';
   } else {
@@ -1585,7 +1589,7 @@ function popularRefPrimeDropdown(placa){
 }
 function atualizarTituloOs(){
   const tipo=document.getElementById('os-tipo').value;
-  const label = tipo==='CMAN' ? 'OS CMAN' : 'OS Prime';
+  const label = tipo==='CMAN' ? 'OS CMAN' : tipo==='PRIME+CMAN' ? 'OS Prime + CMAN' : 'OS Prime';
   document.getElementById('os-modal-title').textContent = (editOsIdx!==null?'Editar ':'Nova ') + label;
 }
 
@@ -1604,11 +1608,12 @@ function salvarOs(){
   const outros=document.getElementById('os-outros').value.trim();
   if(outros)servs.push(outros);
   const tipoOs=document.getElementById('os-tipo').value;
-  const tipoCmanServico = tipoOs==='CMAN' ? document.getElementById('os-cman-servico').value : '';
-  const osRef = tipoOs==='CMAN' ? document.getElementById('os-ref-prime').value : '';
+  const temCman = tipoOsTemCman(tipoOs);
+  const tipoCmanServico = temCman ? document.getElementById('os-cman-servico').value : '';
+  const osRef = temCman ? document.getElementById('os-ref-prime').value : '';
   // Garantia exige referência da Prime que originou
-  if(tipoOs==='CMAN' && tipoCmanServico==='GARANTIA' && !osRef){
-    alert('⚠ Toda OS CMAN de Garantia precisa apontar a OS Prime de referência.');
+  if(temCman && tipoCmanServico==='GARANTIA' && !osRef){
+    alert('⚠ Toda OS de Garantia precisa apontar a OS Prime de referência.');
     return;
   }
   const o={
