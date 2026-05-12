@@ -759,20 +759,20 @@ select option{background:var(--s2)}
   </div>
   <div id="f-pneu-moto" style="display:none">
     <div style="background:var(--s2);padding:10px;border-radius:8px;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:6px">🏍️ PNEU DIANTEIRO</div>
+      <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:6px">🏍️ PNEU DIANTEIRO <span style="font-weight:400;opacity:.7">· troca a cada 8.000 km</span></div>
       <div class="fg fg4">
         <div class="fi"><label>Vida útil (%)</label><select id="f-pneud-pct" class="pct-sel"></select></div>
         <div class="fi"><label>KM Última Troca</label><input type="number" id="f-kmultpneud" oninput="calcPneuMotoPrx('d')"></div>
-        <div class="fi"><label>KM Próx. (auto +35k)</label><input type="number" id="f-kmprxpneud" readonly style="opacity:.5"></div>
+        <div class="fi"><label>KM Próx. (auto +8.000)</label><input type="number" id="f-kmprxpneud" readonly style="opacity:.5"></div>
         <div class="fi"><label>Data Troca</label><input type="date" id="f-dtpneud"></div>
       </div>
     </div>
     <div style="background:var(--s2);padding:10px;border-radius:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">🏍️ PNEU TRASEIRO</div>
+      <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">🏍️ PNEU TRASEIRO <span style="font-weight:400;opacity:.7">· troca a cada 6.000 km</span></div>
       <div class="fg fg4">
         <div class="fi"><label>Vida útil (%)</label><select id="f-pneut-pct" class="pct-sel"></select></div>
         <div class="fi"><label>KM Última Troca</label><input type="number" id="f-kmultpneut" oninput="calcPneuMotoPrx('t')"></div>
-        <div class="fi"><label>KM Próx. (auto +35k)</label><input type="number" id="f-kmprxpneut" readonly style="opacity:.5"></div>
+        <div class="fi"><label>KM Próx. (auto +6.000)</label><input type="number" id="f-kmprxpneut" readonly style="opacity:.5"></div>
         <div class="fi"><label>Data Troca</label><input type="date" id="f-dtpneut"></div>
       </div>
     </div>
@@ -848,17 +848,17 @@ select option{background:var(--s2)}
   <!-- Modo MOTO -->
   <div id="pneu-troca-moto" style="display:none">
     <div style="background:var(--s2);padding:10px;border-radius:8px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pneu-troca-trocar-d" checked> <span style="color:var(--cyan);font-weight:700">🏍️ Trocar Dianteiro</span></label></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pneu-troca-trocar-d" checked> <span style="color:var(--cyan);font-weight:700">🏍️ Trocar Dianteiro</span> <span style="font-size:10px;color:var(--txt3);font-weight:400">(troca a cada 8.000 km)</span></label></div>
       <div class="fg fg1 fg">
-        <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmultd" oninput="document.getElementById('pneu-troca-kmprxd').value = (parseInt(this.value)||0) ? (parseInt(this.value)+35000) : ''"></div>
-        <div class="fi"><label>KM Próxima (auto +35k)</label><input type="number" id="pneu-troca-kmprxd" readonly style="opacity:.6"></div>
+        <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmultd" oninput="document.getElementById('pneu-troca-kmprxd').value = (parseInt(this.value)||0) ? (parseInt(this.value)+8000) : ''"></div>
+        <div class="fi"><label>KM Próxima (auto +8.000)</label><input type="number" id="pneu-troca-kmprxd" readonly style="opacity:.6"></div>
       </div>
     </div>
     <div style="background:var(--s2);padding:10px;border-radius:8px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pneu-troca-trocar-t" checked> <span style="color:var(--purple);font-weight:700">🏍️ Trocar Traseiro</span></label></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pneu-troca-trocar-t" checked> <span style="color:var(--purple);font-weight:700">🏍️ Trocar Traseiro</span> <span style="font-size:10px;color:var(--txt3);font-weight:400">(troca a cada 6.000 km)</span></label></div>
       <div class="fg fg1 fg">
-        <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmultt" oninput="document.getElementById('pneu-troca-kmprxt').value = (parseInt(this.value)||0) ? (parseInt(this.value)+35000) : ''"></div>
-        <div class="fi"><label>KM Próxima (auto +35k)</label><input type="number" id="pneu-troca-kmprxt" readonly style="opacity:.6"></div>
+        <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmultt" oninput="document.getElementById('pneu-troca-kmprxt').value = (parseInt(this.value)||0) ? (parseInt(this.value)+6000) : ''"></div>
+        <div class="fi"><label>KM Próxima (auto +6.000)</label><input type="number" id="pneu-troca-kmprxt" readonly style="opacity:.6"></div>
       </div>
     </div>
     <div class="fg fg1 fg">
@@ -1143,10 +1143,12 @@ function calcPneuPrx(p){
   const kmUltPneu=parseInt(document.getElementById(p+'-kmultpneu').value)||0;
   document.getElementById(p+'-kmprxpneu').value = kmUltPneu>0 ? kmUltPneu+35000 : '';
 }
+// Intervalos de troca de pneu para moto (dianteiro x traseiro)
+const PNEU_MOTO_INTERVALO = { d: 8000, t: 6000 };
 function calcPneuMotoPrx(lado){
-  // lado = 'd' (dianteiro) ou 't' (traseiro)
+  // lado = 'd' (dianteiro: 8.000 km) ou 't' (traseiro: 6.000 km)
   const kmUlt=parseInt(document.getElementById('f-kmultpneu'+lado).value)||0;
-  document.getElementById('f-kmprxpneu'+lado).value = kmUlt>0 ? kmUlt+35000 : '';
+  document.getElementById('f-kmprxpneu'+lado).value = kmUlt>0 ? kmUlt+PNEU_MOTO_INTERVALO[lado] : '';
 }
 function toggleMotoFields(){
   const isMoto = document.getElementById('f-ismoto').checked;
@@ -1617,22 +1619,25 @@ function renderPastilhas(){
     const pneuPfc=pneuPct<=20?'pf-r':pneuPct<=50?'pf-y':'pf-g';
     // Pneus moto (dianteiro/traseiro)
     function pneuBlocoMoto(lado, label, cor){
+      const intervalo = PNEU_MOTO_INTERVALO[lado.toLowerCase()];
+      const intervaloFmt = (intervalo/1000) + 'k';
+      const alertaKm = lado.toLowerCase()==='d' ? 1000 : 800; // amarelo quando faltar < 1k (D) ou 800 (T)
       const pct=parseInt(v['pneu'+lado+'Pct'],10)||0;
       const kmU=parseInt(v['kmUltPneu'+lado],10)||0;
-      const kmP=parseInt(v['kmPrxPneu'+lado],10) || (kmU>0 ? kmU+35000 : 0);
+      const kmP=parseInt(v['kmPrxPneu'+lado],10) || (kmU>0 ? kmU+intervalo : 0);
       const rest=kmP>0 ? kmP-kmAtual : null;
       const restTxt=rest===null?'—':rest<0?`⚠ ${Math.abs(rest).toLocaleString()} km VENCIDO`:`${rest.toLocaleString()} km`;
-      const restCol=rest===null?'var(--txt3)':rest<0?'var(--red)':rest<=2000?'var(--amber)':'var(--green)';
+      const restCol=rest===null?'var(--txt3)':rest<0?'var(--red)':rest<=alertaKm?'var(--amber)':'var(--green)';
       const pfc=pct<=20?'pf-r':pct<=50?'pf-y':'pf-g';
       return `<div style="margin-top:8px;padding:10px;background:var(--s2);border-radius:8px;border-left:3px solid ${cor}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.5px">🏍️ Pneu ${label}</div>
+          <div style="font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.5px">🏍️ Pneu ${label} · troca a cada ${intervalo.toLocaleString()} km</div>
           <span style="font-size:11px;font-weight:700;color:var(--txt2)">${pct}% vida útil</span>
         </div>
         <div class="past-bar" style="margin-bottom:8px"><div class="past-bar-fill ${pfc}" style="width:${pct}%"></div></div>
         <div class="past-info-grid">
           <div class="past-info-item"><div class="past-info-lbl">KM Última Troca</div><div class="past-info-val" style="font-family:var(--mono)">${kmU>0?kmU.toLocaleString()+' km':'—'}</div></div>
-          <div class="past-info-item"><div class="past-info-lbl">KM Próxima (+35k)</div><div class="past-info-val" style="font-family:var(--mono)">${kmP>0?kmP.toLocaleString()+' km':'—'}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">KM Próxima (+${intervaloFmt})</div><div class="past-info-val" style="font-family:var(--mono)">${kmP>0?kmP.toLocaleString()+' km':'—'}</div></div>
           <div class="past-info-item"><div class="past-info-lbl">KM Restante</div><div class="past-info-val" style="color:${restCol};font-family:var(--mono);font-weight:700">${restTxt}</div></div>
           <div class="past-info-item"><div class="past-info-lbl">📅 Data Troca</div><div class="past-info-val">${fmtDt(v['dtpneu'+lado])}</div></div>
         </div>
@@ -1762,9 +1767,9 @@ function atualizarPneuTrocaUI(){
     subEl.textContent=`${v.pref||v.placa} — ${v.marca} ${v.modelo}${isMoto?' (Moto)':''}`;
     if(isMoto){
       document.getElementById('pneu-troca-kmultd').value=v.km||'';
-      document.getElementById('pneu-troca-kmprxd').value = v.km>0 ? v.km+35000 : '';
+      document.getElementById('pneu-troca-kmprxd').value = v.km>0 ? v.km+PNEU_MOTO_INTERVALO.d : '';
       document.getElementById('pneu-troca-kmultt').value=v.km||'';
-      document.getElementById('pneu-troca-kmprxt').value = v.km>0 ? v.km+35000 : '';
+      document.getElementById('pneu-troca-kmprxt').value = v.km>0 ? v.km+PNEU_MOTO_INTERVALO.t : '';
     } else {
       document.getElementById('pneu-troca-kmult').value=v.km||'';
       if(v.km>0) document.getElementById('pneu-troca-kmprx').value=v.km+35000;
@@ -1784,11 +1789,11 @@ function salvarPneuTroca(){
     if(!trocarD && !trocarT){ alert('Marque ao menos um pneu (dianteiro ou traseiro) pra trocar.'); return; }
     if(trocarD){
       const kmD=parseInt(document.getElementById('pneu-troca-kmultd').value)||0;
-      if(kmD>0){ v.kmUltPneuD=kmD; v.kmPrxPneuD=kmD+35000; v.dtpneuD=v.dtpneu; v.pneuDPct=100; }
+      if(kmD>0){ v.kmUltPneuD=kmD; v.kmPrxPneuD=kmD+PNEU_MOTO_INTERVALO.d; v.dtpneuD=v.dtpneu; v.pneuDPct=100; }
     }
     if(trocarT){
       const kmT=parseInt(document.getElementById('pneu-troca-kmultt').value)||0;
-      if(kmT>0){ v.kmUltPneuT=kmT; v.kmPrxPneuT=kmT+35000; v.dtpneuT=v.dtpneu; v.pneuTPct=100; }
+      if(kmT>0){ v.kmUltPneuT=kmT; v.kmPrxPneuT=kmT+PNEU_MOTO_INTERVALO.t; v.dtpneuT=v.dtpneu; v.pneuTPct=100; }
     }
   } else {
     v.pneus=parseInt(document.getElementById('pneu-troca-pct').value)||100;
@@ -1844,13 +1849,13 @@ function salvarCad(){
   const kmUltPneu=parseInt(document.getElementById('f-kmultpneu').value)||0;
   const kmPrxPneu=parseInt(document.getElementById('f-kmprxpneu').value) || (kmUltPneu>0 ? kmUltPneu+35000 : 0);
   const dtpneu=document.getElementById('f-dtpneu').value;
-  // Moto: pneus separados dianteiro/traseiro
+  // Moto: pneus separados dianteiro (8k) / traseiro (6k)
   const kmUltPneuD=parseInt(document.getElementById('f-kmultpneud').value)||0;
-  const kmPrxPneuD=kmUltPneuD>0 ? kmUltPneuD+35000 : 0;
+  const kmPrxPneuD=kmUltPneuD>0 ? kmUltPneuD+PNEU_MOTO_INTERVALO.d : 0;
   const dtpneuD=document.getElementById('f-dtpneud').value;
   const pneuDPct=parseInt(document.getElementById('f-pneud-pct').value)||100;
   const kmUltPneuT=parseInt(document.getElementById('f-kmultpneut').value)||0;
-  const kmPrxPneuT=kmUltPneuT>0 ? kmUltPneuT+35000 : 0;
+  const kmPrxPneuT=kmUltPneuT>0 ? kmUltPneuT+PNEU_MOTO_INTERVALO.t : 0;
   const dtpneuT=document.getElementById('f-dtpneut').value;
   const pneuTPct=parseInt(document.getElementById('f-pneut-pct').value)||100;
   const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,motivoBaixa:document.getElementById('f-motivo').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,kmUltPast,kmPrxPast,kmUltPneu,kmPrxPneu,dtpneu,isMoto,kmUltPneuD,kmPrxPneuD,dtpneuD,pneuDPct,kmUltPneuT,kmPrxPneuT,dtpneuT,pneuTPct,sit:document.getElementById('f-sit').value};
@@ -1900,11 +1905,11 @@ function openEdit(id){
   // Moto
   document.getElementById('f-ismoto').checked = !!v.isMoto;
   document.getElementById('f-kmultpneud').value=v.kmUltPneuD||'';
-  document.getElementById('f-kmprxpneud').value=v.kmPrxPneuD||(v.kmUltPneuD?v.kmUltPneuD+35000:'');
+  document.getElementById('f-kmprxpneud').value=v.kmPrxPneuD||(v.kmUltPneuD?v.kmUltPneuD+PNEU_MOTO_INTERVALO.d:'');
   document.getElementById('f-dtpneud').value=v.dtpneuD||'';
   document.getElementById('f-pneud-pct').value=v.pneuDPct||100;
   document.getElementById('f-kmultpneut').value=v.kmUltPneuT||'';
-  document.getElementById('f-kmprxpneut').value=v.kmPrxPneuT||(v.kmUltPneuT?v.kmUltPneuT+35000:'');
+  document.getElementById('f-kmprxpneut').value=v.kmPrxPneuT||(v.kmUltPneuT?v.kmUltPneuT+PNEU_MOTO_INTERVALO.t:'');
   document.getElementById('f-dtpneut').value=v.dtpneuT||'';
   document.getElementById('f-pneut-pct').value=v.pneuTPct||100;
   toggleMotoFields();
