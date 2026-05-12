@@ -2296,7 +2296,13 @@ async function fazerLogin(){
     const doc = await db.collection('usuarios').doc(u).get();
     if(doc.exists && doc.data().pass===p){
       const d = doc.data();
-      sessao = {user:d.user, nome:d.nome, role:d.role};
+      // Se o user existe ALSO na lista fixa, lista fixa vence (role/nome)
+      const fix = USUARIOS_SISTEMA.find(x=>x.user.toLowerCase()===u);
+      sessao = {
+        user: d.user,
+        nome: fix ? fix.nome : d.nome,
+        role: fix ? fix.role : d.role
+      };
       modoVisitante = false;
       localStorage.setItem('scv_sessao', JSON.stringify(sessao));
       btn.textContent='ENTRAR';btn.disabled=false;
