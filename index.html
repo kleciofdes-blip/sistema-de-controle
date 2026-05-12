@@ -635,7 +635,7 @@ select option{background:var(--s2)}
       </div>
       <div class="dr dr2">
         <div class="dc"><div class="dc-h"><span class="dc-t">Status de Revisões</span><span class="dc-b" id="dob-rv">—</span></div><div class="chart-canvas-wrap lg"><canvas id="chart-rev"></canvas></div></div>
-        <div class="dc"><div class="dc-h"><span class="dc-t">OS Prima Abertas</span><span class="dc-b" id="dob-os">0</span></div><div class="chart-canvas-wrap lg"><canvas id="chart-os"></canvas></div></div>
+        <div class="dc"><div class="dc-h"><span class="dc-t">OS Prime Abertas</span><span class="dc-b" id="dob-os">0</span></div><div class="chart-canvas-wrap lg"><canvas id="chart-os"></canvas></div></div>
       </div>
     </div>
 
@@ -654,7 +654,7 @@ select option{background:var(--s2)}
               <th>#</th><th>Prefixo</th><th>Placa</th><th>Tipo</th><th>Marca / Modelo</th>
               <th>KM Atual</th><th>KM Últ. Revisão</th><th>Data Últ. Revisão</th><th>KM Próx. Revisão</th>
               <th>Data Próx. Revisão</th><th>KM Restante</th>
-              <th>Pneus</th><th>Pastilhas</th><th>Status</th><th>OS Prima</th><th>Local</th><th></th>
+              <th>Pneus</th><th>Pastilhas</th><th>Status</th><th>OS Prime</th><th>Local</th><th></th>
             </tr></thead>
             <tbody id="tbody"></tbody>
           </table>
@@ -665,7 +665,7 @@ select option{background:var(--s2)}
     </div>
 
     <div class="page" id="p-os">
-      <div class="tr-h"><h2>OS Prima — Abertas</h2><span class="tr-cnt" id="os-cnt">—</span><button class="btn btn-cy" style="margin-left:auto" onclick="openOsModal()">+ Nova OS</button></div>
+      <div class="tr-h"><h2>OS Prime — Abertas</h2><span class="tr-cnt" id="os-cnt">—</span><button class="btn btn-cy" style="margin-left:auto" onclick="openOsModal()">+ Nova OS</button></div>
       <div class="tc">
         <div class="srch-w"><span style="color:var(--txt3)">🔍</span><input type="text" id="os-srch" placeholder="Buscar placa, nº OS, veículo..." oninput="renderOs()"></div>
         <select class="flt" id="os-fst" onchange="renderOs()"><option value="">Todos os Status</option><option value="AGUARDANDO ENVIAR VTR">Aguard. Enviar VTR</option><option value="EM ORÇAMENTO">Em Orçamento</option><option value="COTAÇÕES">Cotações</option><option value="AGUARDANDO ORÇAMENTO">Aguard. Orçamento</option><option value="VALIDAÇÃO 1º ORÇAMENTO">Validação 1º Orç.</option><option value="REAVALIAÇÃO">Reavaliação</option><option value="AGUARDANDO APROVAÇÃO">Aguard. Aprovação</option><option value="LIBERAÇÃO">Liberação</option><option value="APROVAÇÃO">Aprovação</option><option value="PLATAFORMA">Plataforma</option><option value="APROVADA">Aprovada</option></select>
@@ -750,7 +750,7 @@ select option{background:var(--s2)}
 </div></div>
 
 <div class="ov" id="ov-os"><div class="modal modal-lg">
-  <div class="modal-top"><div><div class="m-title" id="os-modal-title">Nova OS Prima</div><div class="m-sub">Ordem de Serviço</div></div><div class="btn-x" onclick="closeOv('ov-os')">✕</div></div>
+  <div class="modal-top"><div><div class="m-title" id="os-modal-title">Nova OS Prime</div><div class="m-sub">Ordem de Serviço</div></div><div class="btn-x" onclick="closeOv('ov-os')">✕</div></div>
   <div class="msec">Identificação da OS</div>
   <div class="fg fg3">
     <div class="fi"><label>Nº da OS</label><input type="text" id="os-num" placeholder="OS-2026-001"></div>
@@ -837,13 +837,13 @@ select option{background:var(--s2)}
   <div class="rpt-filters">
     <div class="fi"><label>Status</label><select id="rpt-fst" class="flt" style="width:100%"><option value="">Todos</option><option value="EM CONDIÇÃO">Em Condição</option><option value="BAIXADA">Baixada</option><option value="MANUTENÇÃO">Manutenção</option></select></div>
     <div class="fi"><label>Tipo</label><select id="rpt-ftp" class="flt" style="width:100%"><option value="">Todos</option><option value="VPC">VPC</option><option value="VPI">VPI</option><option value="VAAD">VAAD</option><option value="VTP">VTP</option><option value="VMC">VMC</option><option value="VSO">VSO</option><option value="VSV">VSV</option></select></div>
-    <div class="fi"><label>OS Prima</label><select id="rpt-fos" class="flt" style="width:100%"><option value="">Todas</option><option value="com">Com OS</option><option value="sem">Sem OS</option></select></div>
+    <div class="fi"><label>OS Prime</label><select id="rpt-fos" class="flt" style="width:100%"><option value="">Todas</option><option value="com">Com OS</option><option value="sem">Sem OS</option></select></div>
   </div>
   <div class="msec">Relatórios Disponíveis</div>
   <div class="rpt-grid">
     <div class="rpt-card"><div class="rpt-icon">🚔</div><div class="rpt-name">Viaturas</div><div class="rpt-desc">Frota completa com KM,<br>revisões, datas e componentes</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('vtr','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('vtr','xlsx')">📊 Excel</span></div></div>
     <div class="rpt-card"><div class="rpt-icon">⚠️</div><div class="rpt-name">Revisões</div><div class="rpt-desc">Vencidas, próximas,<br>datas e KM restante</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('rev','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('rev','xlsx')">📊 Excel</span></div></div>
-    <div class="rpt-card"><div class="rpt-icon">📋</div><div class="rpt-name">OS Prima</div><div class="rpt-desc">Abertas e realizadas<br>com detalhes completos</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('os','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('os','xlsx')">📊 Excel</span></div></div>
+    <div class="rpt-card"><div class="rpt-icon">📋</div><div class="rpt-name">OS Prime</div><div class="rpt-desc">Abertas e realizadas<br>com detalhes completos</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('os','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('os','xlsx')">📊 Excel</span></div></div>
     <div class="rpt-card"><div class="rpt-icon">🔩</div><div class="rpt-name">Pastilhas</div><div class="rpt-desc">Status, data de troca<br>e próxima substituição</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('past','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('past','xlsx')">📊 Excel</span></div></div>
     <div class="rpt-card"><div class="rpt-icon">🔧</div><div class="rpt-name">Pneus</div><div class="rpt-desc">Inventário do<br>estoque de pneus</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('pneu','pdf')">📥 PDF</span><span class="rfmt xls" onclick="gerarRelatorio('pneu','xlsx')">📊 Excel</span></div></div>
     <div class="rpt-card" style="grid-column:1/-1"><div class="rpt-icon">📦</div><div class="rpt-name">Relatório Geral Consolidado</div><div class="rpt-desc">Tudo em um documento: viaturas, revisões, OS, pastilhas e pneus</div><div class="rpt-fmts"><span class="rfmt pdf" onclick="gerarRelatorio('geral','pdf')">📥 PDF Completo</span><span class="rfmt xls" onclick="gerarRelatorio('geral','xlsx')">📊 Excel Multi-aba</span></div></div>
@@ -1100,7 +1100,7 @@ function goTo(p,el){
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('p-'+p).classList.add('on');
   if(el)el.classList.add('on');
-  const t={dash:'Dashboard',vtr:'Viaturas',os:'OS Prima Abertas','os-hist':'OS Realizadas',pastilhas:'Pastilhas',pneus:'Estoque Pneus'};
+  const t={dash:'Dashboard',vtr:'Viaturas',os:'OS Prime Abertas','os-hist':'OS Realizadas',pastilhas:'Pastilhas',pneus:'Estoque Pneus'};
   document.getElementById('tbt').textContent=t[p]||p;
   const btn=document.getElementById('topbtn');
   const bmap={dash:'openCad()',vtr:'openCad()',os:'openOsModal()','os-hist':'openOsModal()',pastilhas:'openPastModal()',pneus:'openPneu()'};
@@ -1430,7 +1430,7 @@ function renderOsHist(){
 function openOsModal(idx){
   if(blockSeVisitante())return;
   editOsIdx=(idx!==undefined)?idx:null;
-  document.getElementById('os-modal-title').textContent=editOsIdx!==null?'Editar OS Prima':'Nova OS Prima';
+  document.getElementById('os-modal-title').textContent=editOsIdx!==null?'Editar OS Prime':'Nova OS Prime';
   const sel=document.getElementById('os-vtr-sel');
   sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.placa} — ${v.marca} ${v.modelo} (${v.pref})</option>`).join('');
   document.getElementById('serv-checks').innerHTML=SERVICOS_LIST.map((s,i)=>`<label class="serv-chk"><input type="checkbox" id="serv-${i}" value="${s}"> ${s}</label>`).join('');
@@ -1938,10 +1938,10 @@ function exportPDF(tipo){
     doc.autoTable({...ts,head:[['#','Pref.','Placa','Marca/Modelo','Status','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Restante','Status Rev.']],body:rd.map((v,i)=>[i+1,v.pref||'—',v.placa,v.marca+' '+v.modelo,v.status,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),v.d!==null?(v.d>=0?'+'+v.d.toLocaleString():v.d.toLocaleString()):'—',v.rs]),didDrawCell:d=>{if(d.section==='body'&&d.column.index===10){if(d.cell.raw==='VENCIDA')d.cell.styles.textColor=[239,68,68];else if(d.cell.raw==='PRÓXIMA')d.cell.styles.textColor=[245,158,11];else if(d.cell.raw==='EM DIA')d.cell.styles.textColor=[16,185,129];d.cell.styles.fontStyle='bold';}}});
   }else if(tipo==='os'){
     const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE');
-    addH('OS PRIMA ABERTAS',ab.length+' OS em aberto');
+    addH('OS PRIME ABERTAS',ab.length+' OS em aberto');
     if(!ab.length){doc.setTextColor(100,116,139);doc.setFontSize(10);doc.text('Nenhuma OS aberta.',W/2,55,{align:'center'});}
     else doc.autoTable({...ts,head:[['Nº OS','Data','Placa','Prefixo','Modelo','Status','Local','Serviços']],body:ab.map(o=>[o.numOs,fmtDt(o.dataOs),o.placa,o.prefixo,o.modelo,o.statusOs,o.local,(o.servicos||[]).join(', ')])});
-    doc.addPage();addH('OS PRIMA REALIZADAS',ordens.filter(o=>o.statusOs==='ENTREGUE').length+' OS entregues');
+    doc.addPage();addH('OS PRIME REALIZADAS',ordens.filter(o=>o.statusOs==='ENTREGUE').length+' OS entregues');
     const en=ordens.filter(o=>o.statusOs==='ENTREGUE');
     if(!en.length){doc.setTextColor(100,116,139);doc.setFontSize(10);doc.text('Nenhuma OS realizada.',W/2,55,{align:'center'});}
     else doc.autoTable({...ts,head:[['Nº OS','Data OS','Data Entrega','Placa','Modelo','Serviços']],body:en.map(o=>[o.numOs,fmtDt(o.dataOs),fmtDt(o.dtEntrega),o.placa,o.modelo,(o.servicos||[]).join(', ')])});
