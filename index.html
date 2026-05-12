@@ -1871,10 +1871,11 @@ function exportXLSX(tipo){
 }
 
 function exportPDF(tipo){
-  const {jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});const W=doc.internal.pageSize.getWidth();const data=getFiltrados();
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});const W=doc.internal.pageSize.getWidth();const H=doc.internal.pageSize.getHeight();const data=getFiltrados();
+  function paintBg(){ doc.setFillColor(255,255,255); doc.rect(0,0,W,H,'F'); }
   function addH(t,s){
-    // Fundo branco, faixa institucional navy à esquerda
-    doc.setFillColor(255,255,255);doc.rect(0,0,W,26,'F');
+    paintBg();
+    // Faixa institucional navy à esquerda
     doc.setFillColor(15,23,42);doc.rect(0,0,4,26,'F');
     // Linha inferior cinza fina
     doc.setDrawColor(226,232,240);doc.setLineWidth(0.3);doc.line(0,26,W,26);
@@ -1906,7 +1907,9 @@ function exportPDF(tipo){
     bodyStyles:{fillColor:[255,255,255],textColor:[15,23,42],fontSize:8,lineWidth:0.1,lineColor:[226,232,240],cellPadding:2.2},
     alternateRowStyles:{fillColor:[248,250,252]},
     margin:{top:30,bottom:14},
-    theme:'grid'
+    theme:'grid',
+    // Pinta fundo branco antes do conteúdo em cada página nova (quebra automática)
+    willDrawPage: function(d){ doc.setFillColor(255,255,255); doc.rect(0,0,W,H,'F'); }
   };
 
   if(tipo==='vtr'){
