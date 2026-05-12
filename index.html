@@ -785,6 +785,18 @@ select option{background:var(--s2)}
   <div class="modal-top"><div><div class="m-title" id="os-modal-title">Nova OS Prime</div><div class="m-sub">Ordem de Serviço</div></div><div class="btn-x" onclick="closeOv('ov-os')">✕</div></div>
   <div class="msec">Identificação da OS</div>
   <div class="fg fg3">
+    <div class="fi"><label>Tipo de OS</label><select id="os-tipo" onchange="toggleTipoCman()">
+      <option value="PRIME">OS Prime</option>
+      <option value="CMAN">OS CMAN</option>
+    </select></div>
+    <div class="fi" id="os-cman-wrap" style="display:none"><label>Tipo de Serviço CMAN</label><select id="os-cman-servico">
+      <option value="GARANTIA">Garantia</option>
+      <option value="PREVENTIVA">Preventiva</option>
+      <option value="CORRETIVA">Corretiva</option>
+      <option value="PREVENTIVA+CORRETIVA">Preventiva e Corretiva (juntos)</option>
+    </select></div>
+  </div>
+  <div class="fg fg3">
     <div class="fi"><label>Nº da OS</label><input type="text" id="os-num" placeholder="OS-2026-001"></div>
     <div class="fi"><label>Data da OS</label><input type="date" id="os-data"></div>
     <div class="fi"><label>Status da OS</label><select id="os-status">
@@ -1447,10 +1459,13 @@ const OS_STATUS_COL={'AGUARDANDO ENVIAR VTR':'#00e5ff','EM ORÇAMENTO':'#7c3aed'
 function osCard(o,idx,hist){
   const col=OS_STATUS_COL[o.statusOs]||'#7a8ba0';
   const servs=(o.servicos||[]);
+  const tipo=o.tipoOs||'PRIME';
+  const tipoCor = tipo==='CMAN' ? '#a855f7' : 'var(--cyan)';
+  const tipoLabel = tipo==='CMAN' ? `CMAN${o.tipoCmanServico ? ' · '+o.tipoCmanServico.replace('+CORRETIVA',' + CORRETIVA') : ''}` : 'PRIME';
   return `<div class="os-card" style="border-top:3px solid ${col}">
     <div class="os-card-top">
       <div class="os-head-left">
-        <div class="os-num">📋 OS Nº ${o.numOs||'—'}</div>
+        <div class="os-num">📋 OS Nº ${o.numOs||'—'} <span style="background:${tipoCor}22;color:${tipoCor};border:1px solid ${tipoCor}55;font-family:var(--mono);font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px">${tipoLabel}</span></div>
         <div class="os-date">Data: ${fmtDt(o.dataOs)}${o.dtEntrega?' · Entregue: '+fmtDt(o.dtEntrega):''}</div>
       </div>
       <span class="pill" style="background:${col}22;color:${col};border:1px solid ${col}44">${o.statusOs}</span>
@@ -1499,12 +1514,13 @@ function renderOsHist(){
 function openOsModal(idx){
   if(blockSeVisitante())return;
   editOsIdx=(idx!==undefined)?idx:null;
-  document.getElementById('os-modal-title').textContent=editOsIdx!==null?'Editar OS Prime':'Nova OS Prime';
   const sel=document.getElementById('os-vtr-sel');
   sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.placa} — ${v.marca} ${v.modelo} (${v.pref})</option>`).join('');
   document.getElementById('serv-checks').innerHTML=SERVICOS_LIST.map((s,i)=>`<label class="serv-chk"><input type="checkbox" id="serv-${i}" value="${s}"> ${s}</label>`).join('');
   if(editOsIdx!==null){
     const o=ordens[editOsIdx];
+    document.getElementById('os-tipo').value=o.tipoOs||'PRIME';
+    document.getElementById('os-cman-servico').value=o.tipoCmanServico||'GARANTIA';
     document.getElementById('os-num').value=o.numOs||'';
     document.getElementById('os-data').value=o.dataOs||'';
     document.getElementById('os-status').value=o.statusOs||'';
@@ -1516,10 +1532,25 @@ function openOsModal(idx){
     (o.servicos||[]).forEach(s=>{SERVICOS_LIST.forEach((sl,i)=>{if(sl===s){const cb=document.getElementById('serv-'+i);if(cb)cb.checked=true;}});});
   } else {
     ['os-num','os-local','os-obs','os-outros','os-pref','os-modelo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('os-tipo').value='PRIME';
+    document.getElementById('os-cman-servico').value='GARANTIA';
     document.getElementById('os-data').value=hoje();
     document.getElementById('os-status').value='AGUARDANDO ENVIAR VTR';
   }
+  toggleTipoCman();
+  atualizarTituloOs();
   openOv('ov-os');
+}
+
+function toggleTipoCman(){
+  const tipo=document.getElementById('os-tipo').value;
+  document.getElementById('os-cman-wrap').style.display = tipo==='CMAN' ? '' : 'none';
+  atualizarTituloOs();
+}
+function atualizarTituloOs(){
+  const tipo=document.getElementById('os-tipo').value;
+  const label = tipo==='CMAN' ? 'OS CMAN' : 'OS Prime';
+  document.getElementById('os-modal-title').textContent = (editOsIdx!==null?'Editar ':'Nova ') + label;
 }
 
 function preencherVtrOs(){
@@ -1534,7 +1565,10 @@ function salvarOs(){
   const servs=SERVICOS_LIST.filter((s,i)=>{const cb=document.getElementById('serv-'+i);return cb&&cb.checked;});
   const outros=document.getElementById('os-outros').value.trim();
   if(outros)servs.push(outros);
+  const tipoOs=document.getElementById('os-tipo').value;
   const o={
+    tipoOs:tipoOs,
+    tipoCmanServico: tipoOs==='CMAN' ? document.getElementById('os-cman-servico').value : '',
     numOs:document.getElementById('os-num').value,
     dataOs:document.getElementById('os-data').value,
     statusOs:document.getElementById('os-status').value,
