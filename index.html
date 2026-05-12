@@ -1395,7 +1395,7 @@ function osCard(o,idx,hist){
     </div>
     ${servs.length?`<div class="os-servicos">${servs.map(s=>`<span class="os-serv-tag">⚙ ${s}</span>`).join('')}</div>`:''}
     <div class="os-actions">
-      ${!hist?`<button class="btn btn-sm btn-gr" onclick="entregarOs(${idx})">✅ Marcar Entregue</button>`:'<span class="pill p-on">✅ ENTREGUE</span>'}
+      ${!hist?`<button class="btn btn-sm btn-gr" onclick="entregarOs(${idx})">✅ Marcar Entregue</button>`:`<button class="btn btn-sm" style="background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3)" onclick="reabrirOs(${idx})">↩ Reabrir OS</button>`}
       <button class="btn btn-sm" style="background:transparent;border-color:var(--border)" onclick="editarOs(${idx})">✏ Editar</button>
       <button class="btn btn-sm btn-rd" onclick="excluirOs(${idx})">🗑 Excluir</button>
     </div>
@@ -1484,10 +1484,23 @@ function salvarOs(){
 function entregarOs(idx){
   if(blockSeVisitante())return;
   if(!confirm('Marcar esta OS como Entregue/Realizada?'))return;
+  // Guarda o status anterior pra caso o usuário queira reabrir depois
+  if(ordens[idx].statusOs !== 'ENTREGUE') ordens[idx].statusAnterior = ordens[idx].statusOs;
   ordens[idx].statusOs='ENTREGUE';
   ordens[idx].dtEntrega=hoje();
   renderOs();renderOsHist();renderDash();
   save().then(ok=>{ if(ok) toast('✅ OS marcada como entregue e sincronizada!'); });
+}
+function reabrirOs(idx){
+  if(blockSeVisitante())return;
+  const o=ordens[idx];
+  if(!o)return;
+  if(!confirm('Reabrir esta OS? Ela voltará pra lista de OS Abertas.'))return;
+  // Volta pro status anterior salvo (se houver) ou pro padrão "AGUARDANDO ENVIAR VTR"
+  ordens[idx].statusOs = o.statusAnterior || 'AGUARDANDO ENVIAR VTR';
+  ordens[idx].dtEntrega = '';
+  renderOs();renderOsHist();renderDash();
+  save().then(ok=>{ if(ok) toast('↩ OS reaberta e sincronizada!'); });
 }
 function editarOs(idx){openOsModal(idx);}
 function excluirOs(idx){if(blockSeVisitante())return;if(!confirm('Excluir esta OS?'))return;ordens.splice(idx,1);renderOs();renderOsHist();renderDash();save().then(ok=>{if(ok)toast('✅ OS removida do servidor');});}
