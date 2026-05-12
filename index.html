@@ -818,7 +818,7 @@ select option{background:var(--s2)}
   <div class="fg fg3" id="os-cman-num-row" style="display:none">
     <div class="fi"><label>Nº da OS CMAN</label><input type="text" id="os-num-cman" placeholder="OS CMAN nº..."></div>
     <div class="fi"><label>Data da OS CMAN</label><input type="date" id="os-data-cman"></div>
-    <div class="fi"></div>
+    <div class="fi" id="os-ref-cman-wrap"><label id="os-ref-cman-label">OS CMAN de Referência <span style="font-size:10px;color:var(--txt3);font-weight:400">(opcional)</span></label><input type="text" id="os-ref-cman" placeholder="Ex: OS CMAN nº..."></div>
   </div>
   <div class="msec">Veículo</div>
   <div class="fg fg3">
@@ -1543,6 +1543,7 @@ function openOsModal(idx){
     document.getElementById('os-data').value=o.dataOs||'';
     document.getElementById('os-num-cman').value=o.numOsCman||'';
     document.getElementById('os-data-cman').value=o.dataOsCman||'';
+    document.getElementById('os-ref-cman').value=o.osReferenciaCman||'';
     document.getElementById('os-status').value=o.statusOs||'';
     document.getElementById('os-local').value=o.local||'';
     document.getElementById('os-obs').value=o.obs||'';
@@ -1552,7 +1553,7 @@ function openOsModal(idx){
     (o.servicos||[]).forEach(s=>{SERVICOS_LIST.forEach((sl,i)=>{if(sl===s){const cb=document.getElementById('serv-'+i);if(cb)cb.checked=true;}});});
     document.getElementById('os-ref-prime').value=o.osReferenciaPrime||'';
   } else {
-    ['os-num','os-num-cman','os-data-cman','os-local','os-obs','os-outros','os-pref','os-modelo','os-ref-prime'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['os-num','os-num-cman','os-data-cman','os-local','os-obs','os-outros','os-pref','os-modelo','os-ref-prime','os-ref-cman'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('os-tipo').value='PRIME';
     document.getElementById('os-cman-servico').value='GARANTIA';
     document.getElementById('os-data').value=hoje();
@@ -1615,6 +1616,7 @@ function salvarOs(){
   const osRef = temCman ? document.getElementById('os-ref-prime').value.trim() : '';
   const numOsCman  = ehDuplo ? document.getElementById('os-num-cman').value  : '';
   const dataOsCman = ehDuplo ? document.getElementById('os-data-cman').value : '';
+  const osRefCman  = ehDuplo ? document.getElementById('os-ref-cman').value.trim() : '';
   // Garantia em CMAN puro exige referência à Prime que originou (no PRIME+CMAN o próprio nº Prime já é o vínculo)
   if(temCman && !ehDuplo && tipoCmanServico==='GARANTIA' && !osRef){
     alert('⚠ Toda OS de Garantia precisa apontar a OS Prime de referência.');
@@ -1628,6 +1630,7 @@ function salvarOs(){
     dataOs:document.getElementById('os-data').value,
     numOsCman:numOsCman,
     dataOsCman:dataOsCman,
+    osReferenciaCman:osRefCman,
     statusOs:document.getElementById('os-status').value,
     placa:v.placa,prefixo:v.pref,modelo:`${v.marca} ${v.modelo}`,
     local:document.getElementById('os-local').value,
