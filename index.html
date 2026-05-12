@@ -2585,7 +2585,7 @@ function syncMobileNav(page){
   else { document.getElementById('mn-more').classList.add('on'); }
   // show users in more menu if admin
   const mmu = document.getElementById('mn-more-users');
-  if(mmu) mmu.style.display = (sessao&&sessao.role==='admin')?'flex':'none';
+  if(mmu) mmu.style.display = (sessao&&(sessao.role==='admin'||sessao.role==='supervisor'))?'flex':'none';
 }
 
 // ── VIATURAS MOBILE CARDS ──────────────────────────────────────
