@@ -668,7 +668,7 @@ select option{background:var(--s2)}
       <div class="tr-h"><h2>OS Prima — Abertas</h2><span class="tr-cnt" id="os-cnt">—</span><button class="btn btn-cy" style="margin-left:auto" onclick="openOsModal()">+ Nova OS</button></div>
       <div class="tc">
         <div class="srch-w"><span style="color:var(--txt3)">🔍</span><input type="text" id="os-srch" placeholder="Buscar placa, nº OS, veículo..." oninput="renderOs()"></div>
-        <select class="flt" id="os-fst" onchange="renderOs()"><option value="">Todos os Status</option><option value="AGUARDANDO ENVIAR VTR">Aguard. Enviar VTR</option><option value="AGUARDANDO ORÇAMENTO">Aguard. Orçamento</option><option value="REAVALIAÇÃO">Reavaliação</option><option value="AGUARDANDO APROVAÇÃO">Aguard. Aprovação</option><option value="APROVADA">Aprovada</option></select>
+        <select class="flt" id="os-fst" onchange="renderOs()"><option value="">Todos os Status</option><option value="AGUARDANDO ENVIAR VTR">Aguard. Enviar VTR</option><option value="EM ORÇAMENTO">Em Orçamento</option><option value="COTAÇÕES">Cotações</option><option value="AGUARDANDO ORÇAMENTO">Aguard. Orçamento</option><option value="REAVALIAÇÃO">Reavaliação</option><option value="AGUARDANDO APROVAÇÃO">Aguard. Aprovação</option><option value="APROVADA">Aprovada</option></select>
       </div>
       <div class="os-grid-wrap" id="os-list"></div>
     </div>
@@ -757,6 +757,8 @@ select option{background:var(--s2)}
     <div class="fi"><label>Data da OS</label><input type="date" id="os-data"></div>
     <div class="fi"><label>Status da OS</label><select id="os-status">
       <option value="AGUARDANDO ENVIAR VTR">Aguardando Enviar VTR</option>
+      <option value="EM ORÇAMENTO">Em Orçamento</option>
+      <option value="COTAÇÕES">Cotações</option>
       <option value="AGUARDANDO ORÇAMENTO">Aguardando Orçamento</option>
       <option value="REAVALIAÇÃO">Reavaliação</option>
       <option value="AGUARDANDO APROVAÇÃO">Aguardando Aprovação</option>
@@ -1294,7 +1296,7 @@ function renderRevChart(){
 }
 
 function renderOsChart(){
-  const sts=['AGUARDANDO ENVIAR VTR','AGUARDANDO ORÇAMENTO','REAVALIAÇÃO','AGUARDANDO APROVAÇÃO','APROVADA'];
+  const sts=['AGUARDANDO ENVIAR VTR','EM ORÇAMENTO','COTAÇÕES','AGUARDANDO ORÇAMENTO','REAVALIAÇÃO','AGUARDANDO APROVAÇÃO','APROVADA'];
   const map={};sts.forEach(s=>map[s]=0);
   ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(map[o.statusOs]!==undefined)map[o.statusOs]++;});
   const abertas=ordens.filter(o=>o.statusOs!=='ENTREGUE').length;
@@ -1367,7 +1369,7 @@ function renderVtr(){
 }
 
 // ══════ OS ═════════════════════════════════════════════════════
-const OS_STATUS_COL={'AGUARDANDO ENVIAR VTR':'#00e5ff','AGUARDANDO ORÇAMENTO':'#ffb300','REAVALIAÇÃO':'#ff6d00','AGUARDANDO APROVAÇÃO':'#ff3d57','APROVADA':'#00e676','ENTREGUE':'#00e676'};
+const OS_STATUS_COL={'AGUARDANDO ENVIAR VTR':'#00e5ff','EM ORÇAMENTO':'#7c3aed','COTAÇÕES':'#a855f7','AGUARDANDO ORÇAMENTO':'#ffb300','REAVALIAÇÃO':'#ff6d00','AGUARDANDO APROVAÇÃO':'#ff3d57','APROVADA':'#00e676','ENTREGUE':'#00e676'};
 
 function osCard(o,idx,hist){
   const col=OS_STATUS_COL[o.statusOs]||'#7a8ba0';
