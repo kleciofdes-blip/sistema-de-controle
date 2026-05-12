@@ -740,11 +740,34 @@ select option{background:var(--s2)}
     <div class="fi"><label>Duração (meses)</label><input type="number" id="f-durpast" value="12" min="1" max="60"></div>
   </div>
   <div class="msec">Pneus</div>
-  <div class="fg fg4">
+  <div class="fg" style="margin-bottom:8px">
+    <div class="fi" style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="f-ismoto" onchange="toggleMotoFields()" style="width:18px;height:18px;cursor:pointer"> 🏍️ Esta viatura é uma <strong>moto</strong> (pneu dianteiro e traseiro separados)</label></div>
+  </div>
+  <div id="f-pneu-carro" class="fg fg4">
     <div class="fi"><label>Pneus (%)</label><select id="f-pneus" class="pct-sel"></select></div>
     <div class="fi"><label>KM Última Troca</label><input type="number" id="f-kmultpneu" oninput="calcPneuPrx('f')" placeholder="km na última troca"></div>
     <div class="fi"><label>KM Próx. Troca (auto +35.000)</label><input type="number" id="f-kmprxpneu" readonly style="opacity:.5"></div>
     <div class="fi"><label>Data Troca Pneu</label><input type="date" id="f-dtpneu"></div>
+  </div>
+  <div id="f-pneu-moto" style="display:none">
+    <div style="background:var(--s2);padding:10px;border-radius:8px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:6px">🏍️ PNEU DIANTEIRO</div>
+      <div class="fg fg4">
+        <div class="fi"><label>Vida útil (%)</label><select id="f-pneud-pct" class="pct-sel"></select></div>
+        <div class="fi"><label>KM Última Troca</label><input type="number" id="f-kmultpneud" oninput="calcPneuMotoPrx('d')"></div>
+        <div class="fi"><label>KM Próx. (auto +35k)</label><input type="number" id="f-kmprxpneud" readonly style="opacity:.5"></div>
+        <div class="fi"><label>Data Troca</label><input type="date" id="f-dtpneud"></div>
+      </div>
+    </div>
+    <div style="background:var(--s2);padding:10px;border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">🏍️ PNEU TRASEIRO</div>
+      <div class="fg fg4">
+        <div class="fi"><label>Vida útil (%)</label><select id="f-pneut-pct" class="pct-sel"></select></div>
+        <div class="fi"><label>KM Última Troca</label><input type="number" id="f-kmultpneut" oninput="calcPneuMotoPrx('t')"></div>
+        <div class="fi"><label>KM Próx. (auto +35k)</label><input type="number" id="f-kmprxpneut" readonly style="opacity:.5"></div>
+        <div class="fi"><label>Data Troca</label><input type="date" id="f-dtpneut"></div>
+      </div>
+    </div>
   </div>
   <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-cad')">Cancelar</button><button class="btn btn-cy" onclick="salvarCad()">💾 Salvar Viatura</button></div>
 </div></div>
@@ -802,12 +825,37 @@ select option{background:var(--s2)}
 <div class="ov" id="ov-pneu-troca"><div class="modal modal-sm">
   <div class="modal-top"><div><div class="m-title">🛞 Registrar Troca de Pneu</div><div class="m-sub" id="pneu-troca-sub">Nova troca</div></div><div class="btn-x" onclick="closeOv('ov-pneu-troca')">✕</div></div>
   <div class="fg fg1 fg">
-    <div class="fi"><label>Viatura</label><select id="pneu-troca-vtr"><option value="">Selecionar viatura...</option></select></div>
+    <div class="fi"><label>Viatura</label><select id="pneu-troca-vtr" onchange="atualizarPneuTrocaUI()"><option value="">Selecionar viatura...</option></select></div>
     <div class="fi"><label>Data da Troca</label><input type="date" id="pneu-troca-data"></div>
-    <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmult" oninput="document.getElementById('pneu-troca-kmprx').value = (parseInt(this.value)||0) ? (parseInt(this.value)+35000) : ''" placeholder="km da viatura"></div>
-    <div class="fi"><label>KM Próxima Troca (auto +35.000)</label><input type="number" id="pneu-troca-kmprx" readonly style="opacity:.6"></div>
-    <div class="fi"><label>% Atual dos Pneus</label><select id="pneu-troca-pct" class="pct-sel"></select></div>
-    <div class="fi"><label>Observações (marca, medida...)</label><input type="text" id="pneu-troca-obs" placeholder="Ex: Pirelli 195/55 R15"></div>
+  </div>
+  <!-- Modo CARRO -->
+  <div id="pneu-troca-carro">
+    <div class="fg fg1 fg">
+      <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmult" oninput="document.getElementById('pneu-troca-kmprx').value = (parseInt(this.value)||0) ? (parseInt(this.value)+35000) : ''" placeholder="km da viatura"></div>
+      <div class="fi"><label>KM Próxima Troca (auto +35.000)</label><input type="number" id="pneu-troca-kmprx" readonly style="opacity:.6"></div>
+      <div class="fi"><label>% Atual dos Pneus</label><select id="pneu-troca-pct" class="pct-sel"></select></div>
+      <div class="fi"><label>Observações (marca, medida...)</label><input type="text" id="pneu-troca-obs" placeholder="Ex: Pirelli 195/55 R15"></div>
+    </div>
+  </div>
+  <!-- Modo MOTO -->
+  <div id="pneu-troca-moto" style="display:none">
+    <div style="background:var(--s2);padding:10px;border-radius:8px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pneu-troca-trocar-d" checked> <span style="color:var(--cyan);font-weight:700">🏍️ Trocar Dianteiro</span></label></div>
+      <div class="fg fg1 fg">
+        <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmultd" oninput="document.getElementById('pneu-troca-kmprxd').value = (parseInt(this.value)||0) ? (parseInt(this.value)+35000) : ''"></div>
+        <div class="fi"><label>KM Próxima (auto +35k)</label><input type="number" id="pneu-troca-kmprxd" readonly style="opacity:.6"></div>
+      </div>
+    </div>
+    <div style="background:var(--s2);padding:10px;border-radius:8px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pneu-troca-trocar-t" checked> <span style="color:var(--purple);font-weight:700">🏍️ Trocar Traseiro</span></label></div>
+      <div class="fg fg1 fg">
+        <div class="fi"><label>KM no momento da troca</label><input type="number" id="pneu-troca-kmultt" oninput="document.getElementById('pneu-troca-kmprxt').value = (parseInt(this.value)||0) ? (parseInt(this.value)+35000) : ''"></div>
+        <div class="fi"><label>KM Próxima (auto +35k)</label><input type="number" id="pneu-troca-kmprxt" readonly style="opacity:.6"></div>
+      </div>
+    </div>
+    <div class="fg fg1 fg">
+      <div class="fi"><label>Observações (marca, medida...)</label><input type="text" id="pneu-troca-obs-moto" placeholder="Ex: Pirelli Diablo 130/70 R17"></div>
+    </div>
   </div>
   <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-pneu-troca')">Cancelar</button><button class="btn btn-cy" onclick="salvarPneuTroca()">✅ Registrar Troca</button></div>
 </div></div>
@@ -1086,6 +1134,16 @@ function calcR(p){
 function calcPneuPrx(p){
   const kmUltPneu=parseInt(document.getElementById(p+'-kmultpneu').value)||0;
   document.getElementById(p+'-kmprxpneu').value = kmUltPneu>0 ? kmUltPneu+35000 : '';
+}
+function calcPneuMotoPrx(lado){
+  // lado = 'd' (dianteiro) ou 't' (traseiro)
+  const kmUlt=parseInt(document.getElementById('f-kmultpneu'+lado).value)||0;
+  document.getElementById('f-kmprxpneu'+lado).value = kmUlt>0 ? kmUlt+35000 : '';
+}
+function toggleMotoFields(){
+  const isMoto = document.getElementById('f-ismoto').checked;
+  document.getElementById('f-pneu-carro').style.display = isMoto ? 'none' : '';
+  document.getElementById('f-pneu-moto').style.display = isMoto ? 'block' : 'none';
 }
 function toggleMotivoBaixa(){
   const st=document.getElementById('f-status').value;
@@ -1540,7 +1598,8 @@ function renderPastilhas(){
     const restPastTxt = restPast===null ? '—' : restPast<0 ? `⚠ ${Math.abs(restPast).toLocaleString()} km VENCIDO` : `${restPast.toLocaleString()} km`;
     const restPastCol = restPast===null ? 'var(--txt3)' : restPast<0 ? 'var(--red)' : restPast<=500 ? 'var(--amber)' : 'var(--green)';
 
-    // Pneus — auto +35.000
+    // Pneus — auto +35.000 (carro = 1 conjunto; moto = dianteiro + traseiro)
+    const isMotoV = !!v.isMoto;
     const pneuPct=parseInt(v.pneus,10)||0;
     const kmUltPneu=parseInt(v.kmUltPneu,10)||0;
     const kmPrxPneu = parseInt(v.kmPrxPneu,10) || (kmUltPneu>0 ? kmUltPneu+35000 : 0);
@@ -1548,6 +1607,29 @@ function renderPastilhas(){
     const restPneuTxt = restPneu===null ? '—' : restPneu<0 ? `⚠ ${Math.abs(restPneu).toLocaleString()} km VENCIDO` : `${restPneu.toLocaleString()} km`;
     const restPneuCol = restPneu===null ? 'var(--txt3)' : restPneu<0 ? 'var(--red)' : restPneu<=2000 ? 'var(--amber)' : 'var(--green)';
     const pneuPfc=pneuPct<=20?'pf-r':pneuPct<=50?'pf-y':'pf-g';
+    // Pneus moto (dianteiro/traseiro)
+    function pneuBlocoMoto(lado, label, cor){
+      const pct=parseInt(v['pneu'+lado+'Pct'],10)||0;
+      const kmU=parseInt(v['kmUltPneu'+lado],10)||0;
+      const kmP=parseInt(v['kmPrxPneu'+lado],10) || (kmU>0 ? kmU+35000 : 0);
+      const rest=kmP>0 ? kmP-kmAtual : null;
+      const restTxt=rest===null?'—':rest<0?`⚠ ${Math.abs(rest).toLocaleString()} km VENCIDO`:`${rest.toLocaleString()} km`;
+      const restCol=rest===null?'var(--txt3)':rest<0?'var(--red)':rest<=2000?'var(--amber)':'var(--green)';
+      const pfc=pct<=20?'pf-r':pct<=50?'pf-y':'pf-g';
+      return `<div style="margin-top:8px;padding:10px;background:var(--s2);border-radius:8px;border-left:3px solid ${cor}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.5px">🏍️ Pneu ${label}</div>
+          <span style="font-size:11px;font-weight:700;color:var(--txt2)">${pct}% vida útil</span>
+        </div>
+        <div class="past-bar" style="margin-bottom:8px"><div class="past-bar-fill ${pfc}" style="width:${pct}%"></div></div>
+        <div class="past-info-grid">
+          <div class="past-info-item"><div class="past-info-lbl">KM Última Troca</div><div class="past-info-val" style="font-family:var(--mono)">${kmU>0?kmU.toLocaleString()+' km':'—'}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">KM Próxima (+35k)</div><div class="past-info-val" style="font-family:var(--mono)">${kmP>0?kmP.toLocaleString()+' km':'—'}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">KM Restante</div><div class="past-info-val" style="color:${restCol};font-family:var(--mono);font-weight:700">${restTxt}</div></div>
+          <div class="past-info-item"><div class="past-info-lbl">📅 Data Troca</div><div class="past-info-val">${fmtDt(v['dtpneu'+lado])}</div></div>
+        </div>
+      </div>`;
+    }
 
     return `<div class="past-card" style="border-top:3px solid ${col}">
       <div class="past-card-top">
@@ -1575,7 +1657,9 @@ function renderPastilhas(){
         </div>
       </div>
 
-      <div style="margin-top:10px;padding:10px;background:var(--s2);border-radius:8px">
+      ${isMotoV
+        ? pneuBlocoMoto('D','Dianteiro','#0284C7') + pneuBlocoMoto('T','Traseiro','#A855F7')
+        : `<div style="margin-top:10px;padding:10px;background:var(--s2);border-radius:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <div style="font-size:10px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px">🛞 Pneus</div>
           <span style="font-size:11px;font-weight:700;color:var(--txt2)">${pneuPct}% vida útil</span>
@@ -1587,7 +1671,8 @@ function renderPastilhas(){
           <div class="past-info-item"><div class="past-info-lbl">KM Restante</div><div class="past-info-val" style="color:${restPneuCol};font-family:var(--mono);font-weight:700">${restPneuTxt}</div></div>
           <div class="past-info-item"><div class="past-info-lbl">📅 Data Troca</div><div class="past-info-val">${fmtDt(v.dtpneu)}</div></div>
         </div>
-      </div>
+      </div>`
+      }
 
       <div class="past-alerta" style="background:${pst==='CRITICO'?'rgba(255,61,87,.1)':pst==='ALERTA'?'rgba(255,179,0,.1)':'rgba(0,230,118,.1)'};color:${col}">${alertaMsg}</div>
       <div class="past-actions">
@@ -1640,34 +1725,70 @@ function salvarPast(){
 function openPneuTrocaModal(vId){
   if(blockSeVisitante())return;
   const sel=document.getElementById('pneu-troca-vtr');
-  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.pref||v.placa} — ${v.marca} ${v.modelo}</option>`).join('');
+  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.pref||v.placa} — ${v.marca} ${v.modelo}${v.isMoto?' 🏍️':''}</option>`).join('');
   document.getElementById('pneu-troca-data').value=hoje();
   document.getElementById('pneu-troca-pct').value='100';
   document.getElementById('pneu-troca-obs').value='';
   document.getElementById('pneu-troca-kmult').value='';
   document.getElementById('pneu-troca-kmprx').value='';
+  document.getElementById('pneu-troca-kmultd').value='';
+  document.getElementById('pneu-troca-kmprxd').value='';
+  document.getElementById('pneu-troca-kmultt').value='';
+  document.getElementById('pneu-troca-kmprxt').value='';
+  document.getElementById('pneu-troca-trocar-d').checked=true;
+  document.getElementById('pneu-troca-trocar-t').checked=true;
   if(vId){
     document.getElementById('pneu-troca-vtr').value=vId;
-    const v=vtr.find(x=>x.id==vId);
-    if(v){
-      document.getElementById('pneu-troca-sub').textContent=`${v.pref||v.placa} — ${v.marca} ${v.modelo}`;
+  }
+  atualizarPneuTrocaUI();
+  openOv('ov-pneu-troca');
+}
+function atualizarPneuTrocaUI(){
+  const vId=document.getElementById('pneu-troca-vtr').value;
+  const v=vtr.find(x=>x.id==vId);
+  const subEl=document.getElementById('pneu-troca-sub');
+  const isMoto=v && v.isMoto;
+  document.getElementById('pneu-troca-carro').style.display = isMoto ? 'none' : '';
+  document.getElementById('pneu-troca-moto').style.display = isMoto ? 'block' : 'none';
+  if(v){
+    subEl.textContent=`${v.pref||v.placa} — ${v.marca} ${v.modelo}${isMoto?' (Moto)':''}`;
+    if(isMoto){
+      document.getElementById('pneu-troca-kmultd').value=v.km||'';
+      document.getElementById('pneu-troca-kmprxd').value = v.km>0 ? v.km+35000 : '';
+      document.getElementById('pneu-troca-kmultt').value=v.km||'';
+      document.getElementById('pneu-troca-kmprxt').value = v.km>0 ? v.km+35000 : '';
+    } else {
       document.getElementById('pneu-troca-kmult').value=v.km||'';
       if(v.km>0) document.getElementById('pneu-troca-kmprx').value=v.km+35000;
     }
   } else {
-    document.getElementById('pneu-troca-sub').textContent='Nova troca';
+    subEl.textContent='Nova troca';
   }
-  openOv('ov-pneu-troca');
 }
 function salvarPneuTroca(){
   const v=vtr.find(x=>x.id==document.getElementById('pneu-troca-vtr').value);
   if(!v){alert('Selecione uma viatura.');return;}
   v.dtpneu=document.getElementById('pneu-troca-data').value;
-  v.pneus=parseInt(document.getElementById('pneu-troca-pct').value)||100;
-  const kmUlt=parseInt(document.getElementById('pneu-troca-kmult').value)||0;
-  if(kmUlt>0){
-    v.kmUltPneu=kmUlt;
-    v.kmPrxPneu=kmUlt+35000;
+  if(v.isMoto){
+    // Moto — registra só o que foi marcado pra trocar
+    const trocarD=document.getElementById('pneu-troca-trocar-d').checked;
+    const trocarT=document.getElementById('pneu-troca-trocar-t').checked;
+    if(!trocarD && !trocarT){ alert('Marque ao menos um pneu (dianteiro ou traseiro) pra trocar.'); return; }
+    if(trocarD){
+      const kmD=parseInt(document.getElementById('pneu-troca-kmultd').value)||0;
+      if(kmD>0){ v.kmUltPneuD=kmD; v.kmPrxPneuD=kmD+35000; v.dtpneuD=v.dtpneu; v.pneuDPct=100; }
+    }
+    if(trocarT){
+      const kmT=parseInt(document.getElementById('pneu-troca-kmultt').value)||0;
+      if(kmT>0){ v.kmUltPneuT=kmT; v.kmPrxPneuT=kmT+35000; v.dtpneuT=v.dtpneu; v.pneuTPct=100; }
+    }
+  } else {
+    v.pneus=parseInt(document.getElementById('pneu-troca-pct').value)||100;
+    const kmUlt=parseInt(document.getElementById('pneu-troca-kmult').value)||0;
+    if(kmUlt>0){
+      v.kmUltPneu=kmUlt;
+      v.kmPrxPneu=kmUlt+35000;
+    }
   }
   closeOv('ov-pneu-troca');renderPastilhas();renderDash();
   save().then(ok=>{ if(ok) toast('🛞 Troca de pneu registrada e sincronizada!'); });
@@ -1690,7 +1811,9 @@ function openCad(){
   if(blockSeVisitante())return;
   editId=null;
   document.getElementById('cad-title').textContent='Nova Viatura';
-  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-motivo','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast','f-kmultpast','f-kmprxpast','f-kmultpneu','f-kmprxpneu','f-dtpneu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-motivo','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast','f-kmultpast','f-kmprxpast','f-kmultpneu','f-kmprxpneu','f-dtpneu','f-kmultpneud','f-kmprxpneud','f-dtpneud','f-kmultpneut','f-kmprxpneut','f-dtpneut'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-ismoto').checked=false;
+  toggleMotoFields();
   document.getElementById('f-status').value='EM CONDIÇÃO';
   document.getElementById('f-pneus').value='100';
   document.getElementById('f-past').value='100';
@@ -1709,10 +1832,20 @@ function salvarCad(){
   const kmrev=parseInt(document.getElementById('f-kmrev').value)||(base+iv);
   const kmUltPast=parseInt(document.getElementById('f-kmultpast').value)||0;
   const kmPrxPast=parseInt(document.getElementById('f-kmprxpast').value)||0;
+  const isMoto=document.getElementById('f-ismoto').checked;
   const kmUltPneu=parseInt(document.getElementById('f-kmultpneu').value)||0;
   const kmPrxPneu=parseInt(document.getElementById('f-kmprxpneu').value) || (kmUltPneu>0 ? kmUltPneu+35000 : 0);
   const dtpneu=document.getElementById('f-dtpneu').value;
-  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,motivoBaixa:document.getElementById('f-motivo').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,kmUltPast,kmPrxPast,kmUltPneu,kmPrxPneu,dtpneu,sit:document.getElementById('f-sit').value};
+  // Moto: pneus separados dianteiro/traseiro
+  const kmUltPneuD=parseInt(document.getElementById('f-kmultpneud').value)||0;
+  const kmPrxPneuD=kmUltPneuD>0 ? kmUltPneuD+35000 : 0;
+  const dtpneuD=document.getElementById('f-dtpneud').value;
+  const pneuDPct=parseInt(document.getElementById('f-pneud-pct').value)||100;
+  const kmUltPneuT=parseInt(document.getElementById('f-kmultpneut').value)||0;
+  const kmPrxPneuT=kmUltPneuT>0 ? kmUltPneuT+35000 : 0;
+  const dtpneuT=document.getElementById('f-dtpneut').value;
+  const pneuTPct=parseInt(document.getElementById('f-pneut-pct').value)||100;
+  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,motivoBaixa:document.getElementById('f-motivo').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,kmUltPast,kmPrxPast,kmUltPneu,kmPrxPneu,dtpneu,isMoto,kmUltPneuD,kmPrxPneuD,dtpneuD,pneuDPct,kmUltPneuT,kmPrxPneuT,dtpneuT,pneuTPct,sit:document.getElementById('f-sit').value};
   if(!v.placa){alert('Informe a placa.');return;}
   const isEdit = !!editId;
   if(isEdit){const i=vtr.findIndex(x=>x.id===editId);if(i>=0)vtr[i]=v;}else vtr.push(v);
@@ -1756,6 +1889,17 @@ function openEdit(id){
   document.getElementById('f-kmultpneu').value=v.kmUltPneu||'';
   document.getElementById('f-kmprxpneu').value=v.kmPrxPneu||(v.kmUltPneu?v.kmUltPneu+35000:'');
   document.getElementById('f-dtpneu').value=v.dtpneu||'';
+  // Moto
+  document.getElementById('f-ismoto').checked = !!v.isMoto;
+  document.getElementById('f-kmultpneud').value=v.kmUltPneuD||'';
+  document.getElementById('f-kmprxpneud').value=v.kmPrxPneuD||(v.kmUltPneuD?v.kmUltPneuD+35000:'');
+  document.getElementById('f-dtpneud').value=v.dtpneuD||'';
+  document.getElementById('f-pneud-pct').value=v.pneuDPct||100;
+  document.getElementById('f-kmultpneut').value=v.kmUltPneuT||'';
+  document.getElementById('f-kmprxpneut').value=v.kmPrxPneuT||(v.kmUltPneuT?v.kmUltPneuT+35000:'');
+  document.getElementById('f-dtpneut').value=v.dtpneuT||'';
+  document.getElementById('f-pneut-pct').value=v.pneuTPct||100;
+  toggleMotoFields();
   openOv('ov-cad');
 }
 function excluir(id){if(blockSeVisitante())return;if(!confirm('Excluir esta viatura?'))return;vtr=vtr.filter(x=>x.id!==id);renderVtr();renderDash();save().then(ok=>{if(ok)toast('✅ Viatura removida do servidor');});}
