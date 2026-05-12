@@ -337,6 +337,7 @@ select option{background:var(--s2)}
 .user-row .ur-role{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px}
 .ur-admin{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
 .ur-user{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+.ur-supervisor{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25)}
 
 
 /* Show/hide helpers - base (desktop) */
@@ -2162,13 +2163,13 @@ function toast(msg){
 // ┌─────────────────────────────────────────────────────────────┐
 // │  USUÁRIOS DO SISTEMA — edite esta lista para adicionar ou   │
 // │  remover acessos. Salve o arquivo e faça upload no GitHub.  │
-// │  role: 'admin' = acesso total | 'user' = acesso normal      │
+// │  role: 'admin' = acesso total                                │
+// │        'supervisor' = editor + cadastra usuários (sem deletar)│
+// │        'user' = editor (edita viaturas, OS, etc.)            │
 // └─────────────────────────────────────────────────────────────┘
 const USUARIOS_SISTEMA = [
   {user:'admin',      pass:'pmdf2025',  nome:'Administrador',    role:'admin'},
-  // Adicione novos usuários abaixo seguindo o mesmo formato:
-  // {user:'sd.silva',   pass:'senha123',  nome:'Sd Silva',         role:'user'},
-  // {user:'cb.souza',   pass:'senha456',  nome:'Cb Souza',         role:'user'},
+  {user:'igor.jose',  pass:'pmdf2025',  nome:'Igor José',        role:'supervisor'},
 ];
 
 let sessao = null;
@@ -2229,7 +2230,7 @@ function aplicarAcesso(){
   document.getElementById('tu-name').textContent = sessao.nome;
   document.getElementById('tu-dot').className = 'tu-dot' + (sessao.role==='admin'?' admin':'');
   // show users menu if admin
-  document.getElementById('ni-users').style.display = sessao.role==='admin'?'flex':'none';
+  document.getElementById('ni-users').style.display = (sessao.role==='admin'||sessao.role==='supervisor')?'flex':'none';
   // enable all nav items
   document.querySelectorAll('.ni').forEach(n=>n.style.opacity='1');
   // enable topbtn
@@ -2237,7 +2238,7 @@ function aplicarAcesso(){
   // remove guest banner if any
   const gb=document.getElementById('guest-banner');if(gb)gb.remove();
   applyLayout();
-  if(isMobile()){syncMobileNav('dash');renderFAB('dash');syncMobileBadges();document.getElementById('mn-more-users').style.display=sessao&&sessao.role==='admin'?'flex':'none';}
+  if(isMobile()){syncMobileNav('dash');renderFAB('dash');syncMobileBadges();document.getElementById('mn-more-users').style.display=(sessao&&(sessao.role==='admin'||sessao.role==='supervisor'))?'flex':'none';}
   // Load data from Firestore after login
   loadFromFirestore().then(ok => {
     renderDash();
@@ -2323,9 +2324,22 @@ function logoutConfirm(){
 
 // ── GERENCIAR USUÁRIOS (admin) ─────────────────────────────────
 function openUsers(){
-  if(!sessao||sessao.role!=='admin'){alert('Acesso restrito.');return;}
+  if(!sessao||(sessao.role!=='admin'&&sessao.role!=='supervisor')){alert('Acesso restrito.');return;}
   renderUserList();
+  ajustarFormCadastroUsuario();
   openOv('ov-users');
+}
+function ajustarFormCadastroUsuario(){
+  // Supervisor só pode criar Editor; admin pode criar qualquer role
+  const sel = document.getElementById('nu-role');
+  if(!sel) return;
+  if(sessao && sessao.role==='supervisor'){
+    sel.innerHTML = '<option value="user">Editor (edita tudo)</option>';
+    sel.disabled = true;
+  } else {
+    sel.innerHTML = '<option value="user">Editor (edita tudo)</option><option value="supervisor">Supervisor (edita + cadastra usuários)</option><option value="admin">Administrador (acesso total)</option>';
+    sel.disabled = false;
+  }
 }
 
 async function renderUserList(){
@@ -2340,25 +2354,35 @@ async function renderUserList(){
     snap.forEach(doc => fbUsers.push(doc.data()));
   } catch(e){ console.error(e); }
   const todos = [...fixos, ...fbUsers.filter(u=>!fixos.find(f=>f.user===u.user))];
-  el.innerHTML = todos.map(u=>`
-    <div class="user-row">
+  const isAdmin = sessao && sessao.role==='admin';
+  el.innerHTML = todos.map(u=>{
+    const roleLabel = u.role==='admin'?'ADMIN':u.role==='supervisor'?'SUPERVISOR':'EDITOR';
+    const roleClass = u.role==='admin'?'ur-admin':u.role==='supervisor'?'ur-supervisor':'ur-user';
+    return `<div class="user-row">
       <div>
         <div class="ur-name">${u.nome}</div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--txt2);margin-top:2px">@${u.user}</div>
       </div>
-      <span class="ur-role ${u.role==='admin'?'ur-admin':'ur-user'}">${u.role==='admin'?'ADMIN':'EDITOR'}</span>
-      ${fixos.find(f=>f.user===u.user)?
-        '<span style="font-family:var(--mono);font-size:9px;color:var(--txt3)">FIXO</span>':
-        `<button class="btn btn-sm btn-rd" onclick="removerUsuario('${u.user}')">🗑</button>`
+      <span class="ur-role ${roleClass}">${roleLabel}</span>
+      ${fixos.find(f=>f.user===u.user)
+        ? '<span style="font-family:var(--mono);font-size:9px;color:var(--txt3)">FIXO</span>'
+        : (isAdmin
+            ? `<button class="btn btn-sm btn-rd" onclick="removerUsuario('${u.user}')">🗑</button>`
+            : '<span style="font-family:var(--mono);font-size:9px;color:var(--txt3)" title="Apenas administrador pode remover">🔒 admin</span>'
+          )
       }
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function adicionarUsuario(){
+  if(!sessao||(sessao.role!=='admin'&&sessao.role!=='supervisor')){alert('🔒 Acesso negado.');return;}
   const u=document.getElementById('nu-user').value.trim().toLowerCase();
   const p=document.getElementById('nu-pass').value;
   const n=document.getElementById('nu-nome').value.trim();
-  const r=document.getElementById('nu-role').value;
+  let r=document.getElementById('nu-role').value;
+  // Supervisor só pode criar Editor (defesa em profundidade — UI já limita)
+  if(sessao.role==='supervisor') r='user';
   if(!u||!p||!n){alert('Preencha todos os campos.');return;}
   if(p.length<4){alert('Senha deve ter no mínimo 4 caracteres.');return;}
   // Check if exists in fixed list or Firebase
@@ -2377,6 +2401,7 @@ async function adicionarUsuario(){
 }
 
 async function removerUsuario(usr){
+  if(!sessao||sessao.role!=='admin'){alert('🔒 Acesso negado.\n\nApenas o administrador pode remover usuários.');return;}
   if(usr==='admin'){alert('Não é possível remover o admin fixo.');return;}
   if(!confirm('Remover acesso de "'+usr+'"? Esta ação não pode ser desfeita.'))return;
   try {
