@@ -819,7 +819,7 @@ select option{background:var(--s2)}
     <div class="fi"><label>Modelo</label><input type="text" id="p-mod"></div>
     <div class="fi"><label>Medida</label><input type="text" id="p-med" placeholder="205/55 R16"></div>
     <div class="fi"><label>Aro</label><input type="text" id="p-aro"></div>
-    <div class="fi fu"><label>Para Viatura / Modelo Compatível</label><input type="text" id="p-vtr"></div>
+    <div class="fi fu"><label>Para Viatura / Modelo Compatível</label><input type="text" id="p-pneu-vtr" placeholder="Ex: COROLLA, ASX, LANDER..."></div>
     <div class="fi"><label>Quantidade em Estoque</label><input type="number" id="p-qty" min="0"></div>
   </div>
   <div class="mfoot"><button class="btn btn-gh" onclick="closeOv('ov-pneu')">Cancelar</button><button class="btn btn-cy" onclick="salvarPneu()">💾 Salvar</button></div>
@@ -1667,9 +1667,9 @@ function renderPneus(){
   if(!pneus.length){g.innerHTML='<div class="empty-c" style="grid-column:1/-1"><span>🔧</span>Estoque vazio</div>';return;}
   g.innerHTML=pneus.map((p,i)=>`<div class="pc"><div class="pc-h"><div><div class="pc-brand">${p.marca}</div><div class="pc-mod">${p.mod}</div></div><div class="qty-b"><div class="qty-n">${p.qty}</div><div class="qty-l">UNID.</div></div></div><div class="pc-tags"><span class="tag">⭕ Aro ${p.aro}</span><span class="tag">📐 ${p.med}</span><span class="tag">🚔 ${p.vtr}</span></div><div style="display:flex;gap:6px"><button class="btn btn-sm" style="flex:1;background:transparent;border-color:var(--border)" onclick="editPneu(${i})">✏ Editar</button><button class="btn btn-sm btn-rd" onclick="delPneu(${i})">🗑</button></div></div>`).join('');
 }
-function openPneu(){if(blockSeVisitante())return;editPneuI=null;['p-marca','p-mod','p-med','p-aro','p-vtr','p-qty'].forEach(id=>document.getElementById(id).value='');openOv('ov-pneu');}
-function salvarPneu(){const p={marca:document.getElementById('p-marca').value,mod:document.getElementById('p-mod').value,med:document.getElementById('p-med').value,aro:document.getElementById('p-aro').value,vtr:document.getElementById('p-vtr').value,qty:parseInt(document.getElementById('p-qty').value)||0};if(!p.marca){alert('Informe a marca.');return;}if(editPneuI!==null){pneus[editPneuI]=p;editPneuI=null;}else pneus.push(p);closeOv('ov-pneu');renderPneus();save().then(ok=>{if(ok)toast('✅ Pneu sincronizado no servidor!');});}
-function editPneu(i){if(blockSeVisitante())return;editPneuI=i;const p=pneus[i];['marca','mod','med','aro','vtr','qty'].forEach(k=>{document.getElementById('p-'+k).value=p[k]||'';});openOv('ov-pneu');}
+function openPneu(){if(blockSeVisitante())return;editPneuI=null;['p-marca','p-mod','p-med','p-aro','p-pneu-vtr','p-qty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});openOv('ov-pneu');}
+function salvarPneu(){const p={marca:document.getElementById('p-marca').value,mod:document.getElementById('p-mod').value,med:document.getElementById('p-med').value,aro:document.getElementById('p-aro').value,vtr:document.getElementById('p-pneu-vtr').value,qty:parseInt(document.getElementById('p-qty').value)||0};if(!p.marca){alert('Informe a marca.');return;}if(editPneuI!==null){pneus[editPneuI]=p;editPneuI=null;}else pneus.push(p);closeOv('ov-pneu');renderPneus();save().then(ok=>{if(ok)toast('✅ Pneu sincronizado no servidor!');});}
+function editPneu(i){if(blockSeVisitante())return;editPneuI=i;const p=pneus[i];document.getElementById('p-marca').value=p.marca||'';document.getElementById('p-mod').value=p.mod||'';document.getElementById('p-med').value=p.med||'';document.getElementById('p-aro').value=p.aro||'';document.getElementById('p-pneu-vtr').value=p.vtr||'';document.getElementById('p-qty').value=p.qty||'';openOv('ov-pneu');}
 function delPneu(i){if(blockSeVisitante())return;if(!confirm('Excluir?'))return;pneus.splice(i,1);renderPneus();save().then(ok=>{if(ok)toast('✅ Pneu removido do servidor');});}
 
 // ══════ CRUD VIATURA ═══════════════════════════════════════════
