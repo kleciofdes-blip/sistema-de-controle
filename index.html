@@ -796,11 +796,11 @@ select option{background:var(--s2)}
       <option value="CORRETIVA">Corretiva</option>
       <option value="PREVENTIVA+CORRETIVA">Preventiva e Corretiva (juntos)</option>
     </select></div>
-    <div class="fi" id="os-ref-prime-wrap" style="display:none"><label id="os-ref-prime-label">OS Prime de Referência</label><select id="os-ref-prime"><option value="">— Nenhuma —</option></select></div>
+    <div class="fi" id="os-ref-prime-wrap" style="display:none"><label id="os-ref-prime-label">OS Prime de Referência</label><input type="text" id="os-ref-prime" placeholder="Ex: OS-2026-001"></div>
   </div>
   <div class="fg fg3">
-    <div class="fi"><label>Nº da OS</label><input type="text" id="os-num" placeholder="OS-2026-001"></div>
-    <div class="fi"><label>Data da OS</label><input type="date" id="os-data"></div>
+    <div class="fi"><label id="os-num-label">Nº da OS</label><input type="text" id="os-num" placeholder="OS-2026-001"></div>
+    <div class="fi"><label id="os-data-label">Data da OS</label><input type="date" id="os-data"></div>
     <div class="fi"><label>Status da OS</label><select id="os-status">
       <option value="AGUARDANDO ENVIAR VTR">Aguardando Enviar VTR</option>
       <option value="EM ORÇAMENTO">Em Orçamento</option>
@@ -814,6 +814,11 @@ select option{background:var(--s2)}
       <option value="PLATAFORMA">Plataforma</option>
       <option value="APROVADA">Aprovada</option>
     </select></div>
+  </div>
+  <div class="fg fg3" id="os-cman-num-row" style="display:none">
+    <div class="fi"><label>Nº da OS CMAN</label><input type="text" id="os-num-cman" placeholder="OS CMAN nº..."></div>
+    <div class="fi"><label>Data da OS CMAN</label><input type="date" id="os-data-cman"></div>
+    <div class="fi"></div>
   </div>
   <div class="msec">Veículo</div>
   <div class="fg fg3">
@@ -1468,11 +1473,18 @@ function osCard(o,idx,hist){
   const refBadge = o.osReferenciaPrime
     ? `<span style="background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3);font-family:var(--mono);font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px" title="Referência à OS Prime ${o.osReferenciaPrime}">↩ Ref: ${o.osReferenciaPrime}</span>`
     : '';
+  const ehDuplo = tipo==='PRIME+CMAN';
+  const numLinha  = ehDuplo
+    ? `Prime Nº ${o.numOs||'—'} · CMAN Nº ${o.numOsCman||'—'}`
+    : `OS Nº ${o.numOs||'—'}`;
+  const dataLinha = ehDuplo
+    ? `Prime: ${fmtDt(o.dataOs)} · CMAN: ${fmtDt(o.dataOsCman)}${o.dtEntrega?' · Entregue: '+fmtDt(o.dtEntrega):''}`
+    : `Data: ${fmtDt(o.dataOs)}${o.dtEntrega?' · Entregue: '+fmtDt(o.dtEntrega):''}`;
   return `<div class="os-card" style="border-top:3px solid ${col}">
     <div class="os-card-top">
       <div class="os-head-left">
-        <div class="os-num">📋 OS Nº ${o.numOs||'—'} <span style="background:${tipoCor}22;color:${tipoCor};border:1px solid ${tipoCor}55;font-family:var(--mono);font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px">${tipoLabel}</span>${refBadge}</div>
-        <div class="os-date">Data: ${fmtDt(o.dataOs)}${o.dtEntrega?' · Entregue: '+fmtDt(o.dtEntrega):''}</div>
+        <div class="os-num">📋 ${numLinha} <span style="background:${tipoCor}22;color:${tipoCor};border:1px solid ${tipoCor}55;font-family:var(--mono);font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px">${tipoLabel}</span>${refBadge}</div>
+        <div class="os-date">${dataLinha}</div>
       </div>
       <span class="pill" style="background:${col}22;color:${col};border:1px solid ${col}44">${o.statusOs}</span>
     </div>
@@ -1529,6 +1541,8 @@ function openOsModal(idx){
     document.getElementById('os-cman-servico').value=o.tipoCmanServico||'GARANTIA';
     document.getElementById('os-num').value=o.numOs||'';
     document.getElementById('os-data').value=o.dataOs||'';
+    document.getElementById('os-num-cman').value=o.numOsCman||'';
+    document.getElementById('os-data-cman').value=o.dataOsCman||'';
     document.getElementById('os-status').value=o.statusOs||'';
     document.getElementById('os-local').value=o.local||'';
     document.getElementById('os-obs').value=o.obs||'';
@@ -1536,15 +1550,13 @@ function openOsModal(idx){
     const vFound=vtr.find(v=>v.placa===o.placa);
     if(vFound){sel.value=vFound.id;preencherVtrOs();}
     (o.servicos||[]).forEach(s=>{SERVICOS_LIST.forEach((sl,i)=>{if(sl===s){const cb=document.getElementById('serv-'+i);if(cb)cb.checked=true;}});});
-    popularRefPrimeDropdown(o.placa);
     document.getElementById('os-ref-prime').value=o.osReferenciaPrime||'';
   } else {
-    ['os-num','os-local','os-obs','os-outros','os-pref','os-modelo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['os-num','os-num-cman','os-data-cman','os-local','os-obs','os-outros','os-pref','os-modelo','os-ref-prime'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('os-tipo').value='PRIME';
     document.getElementById('os-cman-servico').value='GARANTIA';
     document.getElementById('os-data').value=hoje();
     document.getElementById('os-status').value='AGUARDANDO ENVIAR VTR';
-    popularRefPrimeDropdown('');
   }
   toggleTipoCman();
   atualizarTituloOs();
@@ -1557,6 +1569,11 @@ function tipoOsTemCman(tipo){
 function toggleTipoCman(){
   const tipo=document.getElementById('os-tipo').value;
   document.getElementById('os-cman-wrap').style.display = tipoOsTemCman(tipo) ? '' : 'none';
+  // Linha extra de Nº/Data CMAN só aparece no modo PRIME+CMAN
+  const ehDuplo = tipo==='PRIME+CMAN';
+  document.getElementById('os-cman-num-row').style.display = ehDuplo ? '' : 'none';
+  document.getElementById('os-num-label').textContent  = ehDuplo ? 'Nº da OS Prime'   : 'Nº da OS';
+  document.getElementById('os-data-label').textContent = ehDuplo ? 'Data da OS Prime' : 'Data da OS';
   toggleRefPrime();
   atualizarTituloOs();
 }
@@ -1565,27 +1582,14 @@ function toggleRefPrime(){
   const servico=document.getElementById('os-cman-servico').value;
   const wrap=document.getElementById('os-ref-prime-wrap');
   const lbl=document.getElementById('os-ref-prime-label');
-  if(!tipoOsTemCman(tipo)){ wrap.style.display='none'; return; }
+  // Em PRIME+CMAN o nº Prime já é digitado direto no campo principal, então a referência é dispensada
+  if(!tipoOsTemCman(tipo) || tipo==='PRIME+CMAN'){ wrap.style.display='none'; return; }
   wrap.style.display='';
   if(servico==='GARANTIA'){
     lbl.innerHTML='OS Prime de Referência <span style="color:var(--red)">*</span> <span style="font-size:10px;color:var(--txt3);font-weight:400">(obrigatório p/ garantia)</span>';
   } else {
     lbl.innerHTML='OS Prime de Referência <span style="font-size:10px;color:var(--txt3);font-weight:400">(opcional)</span>';
   }
-}
-function popularRefPrimeDropdown(placa){
-  const sel=document.getElementById('os-ref-prime');
-  // Lista apenas OS Prime, ordenadas por data desc, opcionalmente filtradas pela mesma placa
-  const candidatas = ordens
-    .map((o,i)=>({...o,_i:i}))
-    .filter(o=>(o.tipoOs||'PRIME')==='PRIME')
-    .filter(o=>!placa || o.placa===placa)
-    .sort((a,b)=>(b.dataOs||'').localeCompare(a.dataOs||''));
-  sel.innerHTML = '<option value="">— Nenhuma —</option>' + candidatas.map(o=>{
-    const dt = o.dataOs ? ' ('+fmtDt(o.dataOs)+')' : '';
-    const veic = ' · '+o.prefixo+'/'+o.placa;
-    return `<option value="${o.numOs}">${o.numOs||'sem nº'}${dt}${veic}</option>`;
-  }).join('');
 }
 function atualizarTituloOs(){
   const tipo=document.getElementById('os-tipo').value;
@@ -1597,8 +1601,6 @@ function preencherVtrOs(){
   const v=vtr.find(x=>x.id==document.getElementById('os-vtr-sel').value);
   document.getElementById('os-pref').value=v?v.pref:'';
   document.getElementById('os-modelo').value=v?`${v.marca} ${v.modelo}`:'';
-  // Re-filtra OS Prime de referência pela placa selecionada
-  popularRefPrimeDropdown(v?v.placa:'');
 }
 
 function salvarOs(){
@@ -1609,10 +1611,13 @@ function salvarOs(){
   if(outros)servs.push(outros);
   const tipoOs=document.getElementById('os-tipo').value;
   const temCman = tipoOsTemCman(tipoOs);
+  const ehDuplo = tipoOs==='PRIME+CMAN';
   const tipoCmanServico = temCman ? document.getElementById('os-cman-servico').value : '';
-  const osRef = temCman ? document.getElementById('os-ref-prime').value : '';
-  // Garantia exige referência da Prime que originou
-  if(temCman && tipoCmanServico==='GARANTIA' && !osRef){
+  const osRef = (temCman && !ehDuplo) ? document.getElementById('os-ref-prime').value.trim() : '';
+  const numOsCman  = ehDuplo ? document.getElementById('os-num-cman').value  : '';
+  const dataOsCman = ehDuplo ? document.getElementById('os-data-cman').value : '';
+  // Garantia em CMAN puro exige referência à Prime que originou (no PRIME+CMAN o próprio nº Prime já é o vínculo)
+  if(temCman && !ehDuplo && tipoCmanServico==='GARANTIA' && !osRef){
     alert('⚠ Toda OS de Garantia precisa apontar a OS Prime de referência.');
     return;
   }
@@ -1622,6 +1627,8 @@ function salvarOs(){
     osReferenciaPrime:osRef,
     numOs:document.getElementById('os-num').value,
     dataOs:document.getElementById('os-data').value,
+    numOsCman:numOsCman,
+    dataOsCman:dataOsCman,
     statusOs:document.getElementById('os-status').value,
     placa:v.placa,prefixo:v.pref,modelo:`${v.marca} ${v.modelo}`,
     local:document.getElementById('os-local').value,
