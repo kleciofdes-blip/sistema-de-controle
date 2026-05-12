@@ -789,12 +789,13 @@ select option{background:var(--s2)}
       <option value="PRIME">OS Prime</option>
       <option value="CMAN">OS CMAN</option>
     </select></div>
-    <div class="fi" id="os-cman-wrap" style="display:none"><label>Tipo de Serviço CMAN</label><select id="os-cman-servico">
+    <div class="fi" id="os-cman-wrap" style="display:none"><label>Tipo de Serviço CMAN</label><select id="os-cman-servico" onchange="toggleRefPrime()">
       <option value="GARANTIA">Garantia</option>
       <option value="PREVENTIVA">Preventiva</option>
       <option value="CORRETIVA">Corretiva</option>
       <option value="PREVENTIVA+CORRETIVA">Preventiva e Corretiva (juntos)</option>
     </select></div>
+    <div class="fi" id="os-ref-prime-wrap" style="display:none"><label id="os-ref-prime-label">OS Prime de Referência</label><select id="os-ref-prime"><option value="">— Nenhuma —</option></select></div>
   </div>
   <div class="fg fg3">
     <div class="fi"><label>Nº da OS</label><input type="text" id="os-num" placeholder="OS-2026-001"></div>
@@ -1462,10 +1463,13 @@ function osCard(o,idx,hist){
   const tipo=o.tipoOs||'PRIME';
   const tipoCor = tipo==='CMAN' ? '#a855f7' : 'var(--cyan)';
   const tipoLabel = tipo==='CMAN' ? `CMAN${o.tipoCmanServico ? ' · '+o.tipoCmanServico.replace('+CORRETIVA',' + CORRETIVA') : ''}` : 'PRIME';
+  const refBadge = o.osReferenciaPrime
+    ? `<span style="background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3);font-family:var(--mono);font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px" title="Referência à OS Prime ${o.osReferenciaPrime}">↩ Ref: ${o.osReferenciaPrime}</span>`
+    : '';
   return `<div class="os-card" style="border-top:3px solid ${col}">
     <div class="os-card-top">
       <div class="os-head-left">
-        <div class="os-num">📋 OS Nº ${o.numOs||'—'} <span style="background:${tipoCor}22;color:${tipoCor};border:1px solid ${tipoCor}55;font-family:var(--mono);font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px">${tipoLabel}</span></div>
+        <div class="os-num">📋 OS Nº ${o.numOs||'—'} <span style="background:${tipoCor}22;color:${tipoCor};border:1px solid ${tipoCor}55;font-family:var(--mono);font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px">${tipoLabel}</span>${refBadge}</div>
         <div class="os-date">Data: ${fmtDt(o.dataOs)}${o.dtEntrega?' · Entregue: '+fmtDt(o.dtEntrega):''}</div>
       </div>
       <span class="pill" style="background:${col}22;color:${col};border:1px solid ${col}44">${o.statusOs}</span>
@@ -1530,12 +1534,15 @@ function openOsModal(idx){
     const vFound=vtr.find(v=>v.placa===o.placa);
     if(vFound){sel.value=vFound.id;preencherVtrOs();}
     (o.servicos||[]).forEach(s=>{SERVICOS_LIST.forEach((sl,i)=>{if(sl===s){const cb=document.getElementById('serv-'+i);if(cb)cb.checked=true;}});});
+    popularRefPrimeDropdown(o.placa);
+    document.getElementById('os-ref-prime').value=o.osReferenciaPrime||'';
   } else {
     ['os-num','os-local','os-obs','os-outros','os-pref','os-modelo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('os-tipo').value='PRIME';
     document.getElementById('os-cman-servico').value='GARANTIA';
     document.getElementById('os-data').value=hoje();
     document.getElementById('os-status').value='AGUARDANDO ENVIAR VTR';
+    popularRefPrimeDropdown('');
   }
   toggleTipoCman();
   atualizarTituloOs();
@@ -1545,7 +1552,36 @@ function openOsModal(idx){
 function toggleTipoCman(){
   const tipo=document.getElementById('os-tipo').value;
   document.getElementById('os-cman-wrap').style.display = tipo==='CMAN' ? '' : 'none';
+  toggleRefPrime();
   atualizarTituloOs();
+}
+function toggleRefPrime(){
+  const tipo=document.getElementById('os-tipo').value;
+  const servico=document.getElementById('os-cman-servico').value;
+  const wrap=document.getElementById('os-ref-prime-wrap');
+  const lbl=document.getElementById('os-ref-prime-label');
+  if(tipo!=='CMAN'){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  // Label varia conforme o tipo de serviço (garantia é obrigatório, demais é opcional)
+  if(servico==='GARANTIA'){
+    lbl.innerHTML='OS Prime de Referência <span style="color:var(--red)">*</span> <span style="font-size:10px;color:var(--txt3);font-weight:400">(obrigatório p/ garantia)</span>';
+  } else {
+    lbl.innerHTML='OS Prime de Referência <span style="font-size:10px;color:var(--txt3);font-weight:400">(opcional)</span>';
+  }
+}
+function popularRefPrimeDropdown(placa){
+  const sel=document.getElementById('os-ref-prime');
+  // Lista apenas OS Prime, ordenadas por data desc, opcionalmente filtradas pela mesma placa
+  const candidatas = ordens
+    .map((o,i)=>({...o,_i:i}))
+    .filter(o=>(o.tipoOs||'PRIME')==='PRIME')
+    .filter(o=>!placa || o.placa===placa)
+    .sort((a,b)=>(b.dataOs||'').localeCompare(a.dataOs||''));
+  sel.innerHTML = '<option value="">— Nenhuma —</option>' + candidatas.map(o=>{
+    const dt = o.dataOs ? ' ('+fmtDt(o.dataOs)+')' : '';
+    const veic = ' · '+o.prefixo+'/'+o.placa;
+    return `<option value="${o.numOs}">${o.numOs||'sem nº'}${dt}${veic}</option>`;
+  }).join('');
 }
 function atualizarTituloOs(){
   const tipo=document.getElementById('os-tipo').value;
@@ -1557,6 +1593,8 @@ function preencherVtrOs(){
   const v=vtr.find(x=>x.id==document.getElementById('os-vtr-sel').value);
   document.getElementById('os-pref').value=v?v.pref:'';
   document.getElementById('os-modelo').value=v?`${v.marca} ${v.modelo}`:'';
+  // Re-filtra OS Prime de referência pela placa selecionada
+  popularRefPrimeDropdown(v?v.placa:'');
 }
 
 function salvarOs(){
@@ -1566,9 +1604,17 @@ function salvarOs(){
   const outros=document.getElementById('os-outros').value.trim();
   if(outros)servs.push(outros);
   const tipoOs=document.getElementById('os-tipo').value;
+  const tipoCmanServico = tipoOs==='CMAN' ? document.getElementById('os-cman-servico').value : '';
+  const osRef = tipoOs==='CMAN' ? document.getElementById('os-ref-prime').value : '';
+  // Garantia exige referência da Prime que originou
+  if(tipoOs==='CMAN' && tipoCmanServico==='GARANTIA' && !osRef){
+    alert('⚠ Toda OS CMAN de Garantia precisa apontar a OS Prime de referência.');
+    return;
+  }
   const o={
     tipoOs:tipoOs,
-    tipoCmanServico: tipoOs==='CMAN' ? document.getElementById('os-cman-servico').value : '',
+    tipoCmanServico:tipoCmanServico,
+    osReferenciaPrime:osRef,
     numOs:document.getElementById('os-num').value,
     dataOs:document.getElementById('os-data').value,
     statusOs:document.getElementById('os-status').value,
