@@ -2517,11 +2517,23 @@ async function removerUsuario(usr){
       // validate still exists
       const lista = getUsuarios();
       const valid = USUARIOS_SISTEMA.find(x=>x.user===sessao.user);
-      if(valid){ aplicarAcesso(); return; }
+      if(valid){
+        // Re-sincroniza role e nome (caso tenham mudado no código desde o último login)
+        sessao.role = valid.role;
+        sessao.nome = valid.nome;
+        localStorage.setItem('scv_sessao', JSON.stringify(sessao));
+        aplicarAcesso(); return;
+      }
       // Check Firebase users
       try {
         const doc = await db.collection('usuarios').doc(sessao.user).get();
-        if(doc.exists){ aplicarAcesso(); return; }
+        if(doc.exists){
+          const d = doc.data();
+          sessao.role = d.role;
+          sessao.nome = d.nome;
+          localStorage.setItem('scv_sessao', JSON.stringify(sessao));
+          aplicarAcesso(); return;
+        }
       } catch(e){}
     }catch(e){}
   }
