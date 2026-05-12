@@ -1582,8 +1582,7 @@ function toggleRefPrime(){
   const servico=document.getElementById('os-cman-servico').value;
   const wrap=document.getElementById('os-ref-prime-wrap');
   const lbl=document.getElementById('os-ref-prime-label');
-  // Em PRIME+CMAN o nº Prime já é digitado direto no campo principal, então a referência é dispensada
-  if(!tipoOsTemCman(tipo) || tipo==='PRIME+CMAN'){ wrap.style.display='none'; return; }
+  if(!tipoOsTemCman(tipo)){ wrap.style.display='none'; return; }
   wrap.style.display='';
   if(servico==='GARANTIA'){
     lbl.innerHTML='OS Prime de Referência <span style="color:var(--red)">*</span> <span style="font-size:10px;color:var(--txt3);font-weight:400">(obrigatório p/ garantia)</span>';
@@ -1613,7 +1612,7 @@ function salvarOs(){
   const temCman = tipoOsTemCman(tipoOs);
   const ehDuplo = tipoOs==='PRIME+CMAN';
   const tipoCmanServico = temCman ? document.getElementById('os-cman-servico').value : '';
-  const osRef = (temCman && !ehDuplo) ? document.getElementById('os-ref-prime').value.trim() : '';
+  const osRef = temCman ? document.getElementById('os-ref-prime').value.trim() : '';
   const numOsCman  = ehDuplo ? document.getElementById('os-num-cman').value  : '';
   const dataOsCman = ehDuplo ? document.getElementById('os-data-cman').value : '';
   // Garantia em CMAN puro exige referência à Prime que originou (no PRIME+CMAN o próprio nº Prime já é o vínculo)
