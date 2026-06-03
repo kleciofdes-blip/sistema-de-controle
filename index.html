@@ -1420,6 +1420,8 @@ function renderVtr(){
     (!q||(v.placa.toLowerCase().includes(q)||v.modelo.toLowerCase().includes(q)||v.pref.includes(q)||v.marca.toLowerCase().includes(q)))&&
     (!fs||v.status===fs)&&(!ft||v.tipo.includes(ft))
   );
+  // Ordena por prefixo crescente (numeric-aware: "9" < "10")
+  f.sort((a,b)=>String(a.pref||'').localeCompare(String(b.pref||''),'pt',{numeric:true,sensitivity:'base'}));
   document.getElementById('vtr-cnt').textContent=`${f.length} / ${vtr.length}`;
   const osMap={};
   ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(!osMap[o.placa])osMap[o.placa]=[];osMap[o.placa].push(o.statusOs);});
@@ -1504,14 +1506,24 @@ function osCard(o,idx,hist){
   </div>`;
 }
 
+// Comparador: ordena por numOs em ordem crescente, tratando como número quando possível
+function _cmpNumOs(a, b){
+  const na = parseInt(String(a.numOs||'').replace(/\D/g,'')) || 0;
+  const nb = parseInt(String(b.numOs||'').replace(/\D/g,'')) || 0;
+  if (na !== nb) return na - nb;
+  return String(a.numOs||'').localeCompare(String(b.numOs||''),'pt',{numeric:true,sensitivity:'base'});
+}
+
 function renderOs(){
   const q=(document.getElementById('os-srch').value||'').toLowerCase();
   const fs=document.getElementById('os-fst').value;
   const abertas=ordens.map((o,i)=>({...o,_i:i})).filter(o=>o.statusOs!=='ENTREGUE');
-  const f=abertas.filter(o=>
+  let f=abertas.filter(o=>
     (!q||(o.placa.toLowerCase().includes(q)||(o.numOs||'').toLowerCase().includes(q)||(o.modelo||'').toLowerCase().includes(q)))&&
     (!fs||o.statusOs===fs)
   );
+  // Ordena por nº da OS crescente
+  f.sort(_cmpNumOs);
   document.getElementById('os-cnt').textContent=`${f.length} OS`;
   document.getElementById('badge-os').textContent=abertas.length;
   const el=document.getElementById('os-list');
@@ -1522,7 +1534,9 @@ function renderOs(){
 function renderOsHist(){
   const q=(document.getElementById('osh-srch').value||'').toLowerCase();
   const hist=ordens.map((o,i)=>({...o,_i:i})).filter(o=>o.statusOs==='ENTREGUE');
-  const f=hist.filter(o=>(!q||(o.placa.toLowerCase().includes(q)||(o.numOs||'').toLowerCase().includes(q))));
+  let f=hist.filter(o=>(!q||(o.placa.toLowerCase().includes(q)||(o.numOs||'').toLowerCase().includes(q))));
+  // Histórico: nº da OS crescente
+  f.sort(_cmpNumOs);
   document.getElementById('os-hist-cnt').textContent=`${f.length} OS realizadas`;
   const el=document.getElementById('os-hist-list');
   if(!f.length){el.innerHTML='<div class="empty-c" style="grid-column:1/-1"><span>✅</span>Nenhuma OS realizada ainda</div>';return;}
@@ -1533,7 +1547,8 @@ function openOsModal(idx){
   if(blockSeVisitante())return;
   editOsIdx=(idx!==undefined)?idx:null;
   const sel=document.getElementById('os-vtr-sel');
-  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtr.map(v=>`<option value="${v.id}">${v.placa} — ${v.marca} ${v.modelo} (${v.pref})</option>`).join('');
+  const vtrOrd = vtr.slice().sort((a,b)=>String(a.pref||'').localeCompare(String(b.pref||''),'pt',{numeric:true,sensitivity:'base'}));
+  sel.innerHTML='<option value="">Selecionar viatura...</option>'+vtrOrd.map(v=>`<option value="${v.id}">${v.pref} — ${v.placa} — ${v.marca} ${v.modelo}</option>`).join('');
   document.getElementById('serv-checks').innerHTML=SERVICOS_LIST.map((s,i)=>`<label class="serv-chk"><input type="checkbox" id="serv-${i}" value="${s}"> ${s}</label>`).join('');
   if(editOsIdx!==null){
     const o=ordens[editOsIdx];
@@ -2017,11 +2032,12 @@ function openKmModal(){
   if(blockSeVisitante())return;
   document.getElementById('km-dt').textContent='Data: '+new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   // Ordena: ativas primeiro (EM CONDIÇÃO/MANUTENÇÃO), baixadas no fim — KM atualizável em qualquer status
+  // Dentro de cada grupo: ordem crescente por prefixo (numeric-aware)
   const ordenadas = vtr.slice().sort((a,b)=>{
     const ba = a.status==='BAIXADA' ? 1 : 0;
     const bb = b.status==='BAIXADA' ? 1 : 0;
     if (ba !== bb) return ba - bb;
-    return (a.pref||a.placa||'').localeCompare(b.pref||b.placa||'');
+    return String(a.pref||a.placa||'').localeCompare(String(b.pref||b.placa||''),'pt',{numeric:true,sensitivity:'base'});
   });
   document.getElementById('kml').innerHTML=ordenadas.map(v=>{
     const kmrev = parseInt(v.kmrev,10)||0;
@@ -2630,6 +2646,7 @@ function renderVtrCards(){
     (!q||(v.placa.toLowerCase().includes(q)||v.modelo.toLowerCase().includes(q)||v.pref.includes(q)||v.marca.toLowerCase().includes(q)))&&
     (!fs||v.status===fs)&&(!ft||v.tipo.includes(ft))
   );
+  f.sort((a,b)=>String(a.pref||'').localeCompare(String(b.pref||''),'pt',{numeric:true,sensitivity:'base'}));
   const el=document.getElementById('vtr-cards');
   if(!el) return;
   if(!f.length){el.innerHTML='<div class="empty-c"><span>🔍</span>Nenhuma viatura encontrada</div>';return;}
