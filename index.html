@@ -230,11 +230,19 @@ td{padding:10px 13px;vertical-align:middle;background:var(--s1);border-bottom:1p
 .rev-it-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .rev-it-pref{background:var(--cyan);color:#fff;padding:2px 8px;border-radius:5px;font-weight:700;font-size:11px;font-family:var(--mono)}
 
-/* Linha inteira destacada quando há alerta de revisão */
-tr.rev-vencida td{background:#fde4e4 !important;border-top:1px solid #f5b8b8 !important;border-bottom:1px solid #f5b8b8 !important}
-tr.rev-vencida:hover td{background:#fbd0d0 !important}
-tr.rev-proxima td{background:#fff4d6 !important;border-top:1px solid #ffd97a !important;border-bottom:1px solid #ffd97a !important}
-tr.rev-proxima:hover td{background:#ffe9b5 !important}
+/* Linha inteira destacada quando há alerta de revisão — alta especificidade pra bater as sticky */
+#vtr-table tr.rev-vencida td,
+#vtr-table tr.rev-vencida td:nth-child(1),
+#vtr-table tr.rev-vencida td:nth-child(2){background:#fde4e4 !important;border-top:1px solid #f5b8b8 !important;border-bottom:1px solid #f5b8b8 !important}
+#vtr-table tr.rev-vencida:hover td,
+#vtr-table tr.rev-vencida:hover td:nth-child(1),
+#vtr-table tr.rev-vencida:hover td:nth-child(2){background:#fbd0d0 !important}
+#vtr-table tr.rev-proxima td,
+#vtr-table tr.rev-proxima td:nth-child(1),
+#vtr-table tr.rev-proxima td:nth-child(2){background:#fff4d6 !important;border-top:1px solid #ffd97a !important;border-bottom:1px solid #ffd97a !important}
+#vtr-table tr.rev-proxima:hover td,
+#vtr-table tr.rev-proxima:hover td:nth-child(1),
+#vtr-table tr.rev-proxima:hover td:nth-child(2){background:#ffe9b5 !important}
 .rev-it-modelo{font-size:11px;color:var(--txt2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rev-it-info{font-size:10px;color:var(--txt3);font-family:var(--mono)}
 .rev-it-st{font-weight:700;font-size:13px;font-family:var(--mono);white-space:nowrap}
