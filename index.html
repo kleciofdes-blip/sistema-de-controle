@@ -1210,7 +1210,7 @@ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.
 function renderDash(){
   const n=vtr.length,em=vtr.filter(v=>v.status==='EM CONDIÇÃO').length,bx=vtr.filter(v=>v.status==='BAIXADA').length,mn=vtr.filter(v=>v.status==='MANUTENÇÃO').length;
   const osAb=ordens.filter(o=>o.statusOs!=='ENTREGUE').length;
-  const rv=vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length,rp=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)<=500&&v.km<=v.kmrev).length;
+  const rv=vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length,rp=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)<=1000&&v.km<=v.kmrev).length;
   document.getElementById('badge').textContent=bx+mn;
   document.getElementById('badge-os').textContent=osAb;
   document.getElementById('sg').innerHTML=`
@@ -1234,7 +1234,7 @@ function renderRevAlerts(){
     if(kmrev<=0) return;
     const d=kmrev-km;
     if(d<0) vencidas.push({v,d});
-    else if(d<=500) proximas.push({v,d});
+    else if(d<=1000) proximas.push({v,d});
   });
   vencidas.sort((a,b)=>a.d-b.d);
   proximas.sort((a,b)=>a.d-b.d);
@@ -1340,12 +1340,12 @@ function renderAlerts(){
     if(v.status==='BAIXADA') return;
     const ref=v.pref||v.placa;
     if(v.kmrev>0&&v.km>v.kmrev)al.push({col:'#ff3d57',t:`Revisão vencida — ${(v.km-v.kmrev).toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
-    else if(v.kmrev>0&&(v.kmrev-v.km)<=500&&v.km<=v.kmrev)al.push({col:'#ffb300',t:`Revisão em ${(v.kmrev-v.km).toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
+    else if(v.kmrev>0&&(v.kmrev-v.km)<=1000&&v.km<=v.kmrev)al.push({col:'#ffb300',t:`Revisão em ${(v.kmrev-v.km).toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
     // Pastilha por KM
     if(v.kmPrxPast>0){
       const d=v.kmPrxPast-v.km;
       if(d<0)al.push({col:'#ff3d57',t:`Pastilha vencida — ${Math.abs(d).toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
-      else if(d<=500)al.push({col:'#ffb300',t:`Pastilha em ${d.toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
+      else if(d<=1000)al.push({col:'#ffb300',t:`Pastilha em ${d.toLocaleString()} km`,pl:ref,s:`${v.marca} ${v.modelo}`});
     }
     // Pneu por KM (35k)
     if(v.kmPrxPneu>0){
@@ -1364,8 +1364,8 @@ function renderAlerts(){
 }
 
 function renderRevChart(){
-  const ok=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)>500).length;
-  const prx=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)<=500&&v.km<=v.kmrev).length;
+  const ok=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)>1000).length;
+  const prx=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)<=1000&&v.km<=v.kmrev).length;
   const vc=vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length;
   const nd=vtr.filter(v=>!v.kmrev||v.kmrev<=0).length;
   const labels=['Em dia','Próxima (≤500km)','Vencida','Sem revisão'];
@@ -1430,7 +1430,7 @@ function renderVtr(){
   tb.innerHTML=f.map((v,i)=>{
     const d=v.kmrev>0?v.kmrev-v.km:null;
     let kc='ok',kt='—';
-    if(d!==null){kt=d<0?`⚠ −${Math.abs(d).toLocaleString()} km`:d<=500?`≈${d.toLocaleString()} km`:`+${d.toLocaleString()} km`;kc=d<0?'er':d<=500?'wa':'ok';}
+    if(d!==null){kt=d<0?`⚠ −${Math.abs(d).toLocaleString()} km`:d<=1000?`≈${d.toLocaleString()} km`:`+${d.toLocaleString()} km`;kc=d<0?'er':d<=1000?'wa':'ok';}
     const pc=v.pneus<=20?'pf-r':v.pneus<=50?'pf-y':'pf-g';
     const bc=v.past<=20?'pf-r':v.past<=50?'pf-y':'pf-g';
     const sc=v.status==='EM CONDIÇÃO'?'p-on':v.status==='BAIXADA'?'p-bx':'p-mn';
@@ -1438,9 +1438,13 @@ function renderVtr(){
     const tp=(v.tipo.split(' - ')[0]||v.tipo).substring(0,4);
     const osV=osMap[v.placa];
     const osHtml=osV&&osV.length?`<span class="op">${osV[0]}</span>`:'<span style="color:var(--txt3);font-size:10px">—</span>';
-    return `<tr>
+    // Alerta visual: vencida (vermelho) ou próxima ≤1000km (amarelo)
+    const revAlerta = d!==null && d<0 ? 'vencida' : (d!==null && d<=1000 ? 'proxima' : null);
+    const rowStyle = revAlerta==='vencida' ? 'background:rgba(239,68,68,.08)' : revAlerta==='proxima' ? 'background:rgba(255,179,0,.10)' : '';
+    const alertaIco = revAlerta==='vencida' ? '<span title="Revisão vencida" style="color:#ef4444;font-weight:700;margin-right:4px">⚠</span>' : revAlerta==='proxima' ? '<span title="Revisão próxima — faltam '+d.toLocaleString()+' km" style="color:#ffb300;font-weight:700;margin-right:4px">⚠</span>' : '';
+    return `<tr style="${rowStyle}">
       <td style="color:var(--txt3);font-family:var(--mono);font-size:10px">${i+1}</td>
-      <td><span class="placa" style="background:var(--cyan);color:#fff;padding:3px 8px;border-radius:6px;font-weight:700">${v.pref||'—'}</span></td>
+      <td>${alertaIco}<span class="placa" style="background:var(--cyan);color:#fff;padding:3px 8px;border-radius:6px;font-weight:700">${v.pref||'—'}</span></td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${v.placa}</td>
       <td><span class="ttag">${tp}</span></td>
       <td style="font-size:12px;font-weight:600;min-width:140px">${v.marca}<br><span style="color:var(--txt2);font-size:11px;font-weight:400">${v.modelo}</span></td>
@@ -1716,7 +1720,7 @@ function renderPastilhas(){
     const kmPrxPast=parseInt(v.kmPrxPast,10)||0;
     const restPast = kmPrxPast>0 ? kmPrxPast-kmAtual : null;
     const restPastTxt = restPast===null ? '—' : restPast<0 ? `⚠ ${Math.abs(restPast).toLocaleString()} km VENCIDO` : `${restPast.toLocaleString()} km`;
-    const restPastCol = restPast===null ? 'var(--txt3)' : restPast<0 ? 'var(--red)' : restPast<=500 ? 'var(--amber)' : 'var(--green)';
+    const restPastCol = restPast===null ? 'var(--txt3)' : restPast<0 ? 'var(--red)' : restPast<=1000 ? 'var(--amber)' : 'var(--green)';
 
     // Pneus — auto +35.000 (carro = 1 conjunto; moto = dianteiro + traseiro)
     const isMotoV = !!v.isMoto;
@@ -2043,8 +2047,8 @@ function openKmModal(){
     const kmrev = parseInt(v.kmrev,10)||0;
     const kmUlt = parseInt(v.kmUltRev,10)||0;
     const rest = kmrev>0 ? (kmrev - v.km) : null;
-    const restTxt = rest===null ? '—' : (rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`);
-    const restCol = rest===null ? 'var(--txt3)' : rest<0 ? 'var(--red)' : rest<=500 ? 'var(--amber)' : 'var(--green)';
+    const restTxt = rest===null ? '—' : (rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=1000 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`);
+    const restCol = rest===null ? 'var(--txt3)' : rest<0 ? 'var(--red)' : rest<=1000 ? 'var(--amber)' : 'var(--green)';
     const ultTxt = kmUlt>0 ? `Últ.Rev: ${kmUlt.toLocaleString()}` : 'Últ.Rev: —';
     const prxTxt = kmrev>0 ? `Próx.Rev: ${kmrev.toLocaleString()}` : 'Próx.Rev: —';
     const isBaixada = v.status==='BAIXADA';
@@ -2082,8 +2086,8 @@ function atualizarPreviewKm(vid){
   // kmrev é fixo. Restante = kmrev - novo km
   const rest = kmrev>0 ? (kmrev - nv) : null;
   if(rest===null){ prev.textContent='Restante: —'; prev.style.color='var(--txt3)'; return; }
-  const restTxt = rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=500 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`;
-  const col = rest<0?'var(--red)':rest<=500?'var(--amber)':'var(--green)';
+  const restTxt = rest<0 ? `⚠ −${Math.abs(rest).toLocaleString()} km` : rest<=1000 ? `≈${rest.toLocaleString()} km` : `+${rest.toLocaleString()} km`;
+  const col = rest<0?'var(--red)':rest<=1000?'var(--amber)':'var(--green)';
   prev.innerHTML = `<span style="color:${col}">Restante: ${restTxt}</span>`;
 }
 function salvarKm(){
@@ -2140,11 +2144,11 @@ function getFiltrados(){
 function exportXLSX(tipo){
   const {utils,writeFile}=XLSX;const wb=utils.book_new();const data=getFiltrados();
   if(tipo==='vtr'||tipo==='geral'){
-    const rows=data.map((v,i)=>{const d=v.kmrev>0?v.kmrev-v.km:null;const rs=v.kmrev>0?(d<0?'VENCIDA':d<=500?'PRÓXIMA':'EM DIA'):'—';return{'#':i+1,'Placa':v.placa,'Prefixo':v.pref,'Tipo':v.tipo.split(' - ')[0]||v.tipo,'Marca':v.marca,'Modelo':v.modelo,'KM Atual':v.km,'Data Últ.Revisão':fmtDt(v.dtrev),'KM Próx.Revisão':v.kmrev||0,'Data Próx.Revisão':fmtDt(v.dtprev),'KM Restante':d!==null?d:0,'Status Revisão':rs,'Pneus%':v.pneus,'Pastilhas%':v.past,'Status':v.status,'Local':v.local||'—'};});
+    const rows=data.map((v,i)=>{const d=v.kmrev>0?v.kmrev-v.km:null;const rs=v.kmrev>0?(d<0?'VENCIDA':d<=1000?'PRÓXIMA':'EM DIA'):'—';return{'#':i+1,'Placa':v.placa,'Prefixo':v.pref,'Tipo':v.tipo.split(' - ')[0]||v.tipo,'Marca':v.marca,'Modelo':v.modelo,'KM Atual':v.km,'Data Últ.Revisão':fmtDt(v.dtrev),'KM Próx.Revisão':v.kmrev||0,'Data Próx.Revisão':fmtDt(v.dtprev),'KM Restante':d!==null?d:0,'Status Revisão':rs,'Pneus%':v.pneus,'Pastilhas%':v.past,'Status':v.status,'Local':v.local||'—'};});
     const ws=utils.json_to_sheet(rows);ws['!cols']=[{wch:4},{wch:10},{wch:10},{wch:8},{wch:12},{wch:16},{wch:10},{wch:14},{wch:14},{wch:14},{wch:12},{wch:14},{wch:9},{wch:10},{wch:14},{wch:16}];utils.book_append_sheet(wb,ws,'Viaturas');
   }
   if(tipo==='rev'||tipo==='geral'){
-    const rows=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{'Placa':v.placa,'Marca/Modelo':v.marca+' '+v.modelo,'Status':v.status,'KM Atual':v.km,'Data Últ.Rev.':fmtDt(v.dtrev),'KM Próx.Rev.':v.kmrev||0,'Data Próx.Rev.':fmtDt(v.dtprev),'KM Restante':d!==null?d:0,'Status Rev.':v.kmrev>0?(d<0?'VENCIDA':d<=500?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>a['KM Restante']-b['KM Restante']);
+    const rows=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{'Placa':v.placa,'Marca/Modelo':v.marca+' '+v.modelo,'Status':v.status,'KM Atual':v.km,'Data Últ.Rev.':fmtDt(v.dtrev),'KM Próx.Rev.':v.kmrev||0,'Data Próx.Rev.':fmtDt(v.dtprev),'KM Restante':d!==null?d:0,'Status Rev.':v.kmrev>0?(d<0?'VENCIDA':d<=1000?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>a['KM Restante']-b['KM Restante']);
     const ws=utils.json_to_sheet(rows);ws['!cols']=[{wch:10},{wch:22},{wch:14},{wch:10},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12}];utils.book_append_sheet(wb,ws,'Revisões');
   }
   if(tipo==='os'||tipo==='geral'){
@@ -2217,7 +2221,7 @@ function exportPDF(tipo){
     doc.autoTable({...ts,head:[['#','Pref.','Placa','Tipo','Marca/Modelo','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Rest.','Pneus','Past.','Status','Local']],body:data.map((v,i)=>{const d=v.kmrev>0?v.kmrev-v.km:null;return[i+1,v.pref,v.placa,v.tipo.split(' - ')[0],v.marca+' '+v.modelo,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),d!==null?(d>=0?'+'+d.toLocaleString():d.toLocaleString()):'—',v.pneus+'%',v.past+'%',v.status,v.local||'—'];}),didDrawCell:d=>{if(d.section==='body'&&d.column.index===12){if(d.cell.raw==='EM CONDIÇÃO')d.cell.styles.textColor=[16,185,129];else if(d.cell.raw==='BAIXADA')d.cell.styles.textColor=[239,68,68];else d.cell.styles.textColor=[245,158,11];d.cell.styles.fontStyle='bold';}}});
   }else if(tipo==='rev'){
     addH('RELATÓRIO DE REVISÕES',data.length+' viatura(s)');
-    const rd=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{...v,d:d,rs:v.kmrev>0?(d<0?'VENCIDA':d<=500?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>(a.d||999999)-(b.d||999999));
+    const rd=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{...v,d:d,rs:v.kmrev>0?(d<0?'VENCIDA':d<=1000?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>(a.d||999999)-(b.d||999999));
     doc.autoTable({...ts,head:[['#','Pref.','Placa','Marca/Modelo','Status','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Restante','Status Rev.']],body:rd.map((v,i)=>[i+1,v.pref||'—',v.placa,v.marca+' '+v.modelo,v.status,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),v.d!==null?(v.d>=0?'+'+v.d.toLocaleString():v.d.toLocaleString()):'—',v.rs]),didDrawCell:d=>{if(d.section==='body'&&d.column.index===10){if(d.cell.raw==='VENCIDA')d.cell.styles.textColor=[239,68,68];else if(d.cell.raw==='PRÓXIMA')d.cell.styles.textColor=[245,158,11];else if(d.cell.raw==='EM DIA')d.cell.styles.textColor=[16,185,129];d.cell.styles.fontStyle='bold';}}});
   }else if(tipo==='os'){
     const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE');
@@ -2656,18 +2660,21 @@ function renderVtrCards(){
 
   el.innerHTML = f.map(v=>{
     const d = v.kmrev>0 ? v.kmrev-v.km : null;
-    const kc = d===null?'':d<0?'er':d<=500?'wa':'ok';
-    const kt = d===null?'—':d<0?`⚠ −${Math.abs(d).toLocaleString()} km`:d<=500?`≈${d.toLocaleString()} km`:`+${d.toLocaleString()} km`;
+    const kc = d===null?'':d<0?'er':d<=1000?'wa':'ok';
+    const kt = d===null?'—':d<0?`⚠ −${Math.abs(d).toLocaleString()} km`:d<=1000?`≈${d.toLocaleString()} km`:`+${d.toLocaleString()} km`;
     const sc = v.status==='EM CONDIÇÃO'?'p-on':v.status==='BAIXADA'?'p-bx':'p-mn';
     const sl = v.status==='EM CONDIÇÃO'?'ATIVA':v.status==='BAIXADA'?'BAIXADA':'MANUT.';
     const pc = v.pneus<=20?'pf-r':v.pneus<=50?'pf-y':'pf-g';
     const bc = v.past<=20?'pf-r':v.past<=50?'pf-y':'pf-g';
     const osV = osMap[v.placa];
     const osHtml = osV&&osV.length ? `<span class="op" style="font-size:10px">${osV[0]}</span>` : '';
-    return `<div class="vtr-card">
+    const revAlerta = d!==null && d<0 ? 'vencida' : (d!==null && d<=1000 ? 'proxima' : null);
+    const cardBorder = revAlerta==='vencida' ? 'border-left:4px solid #ef4444;' : revAlerta==='proxima' ? 'border-left:4px solid #ffb300;' : '';
+    const alertaIco = revAlerta==='vencida' ? '<span style="color:#ef4444;font-weight:700;margin-right:6px;font-size:16px" title="Revisão vencida">⚠</span>' : revAlerta==='proxima' ? '<span style="color:#ffb300;font-weight:700;margin-right:6px;font-size:16px" title="Revisão em '+d.toLocaleString()+' km">⚠</span>' : '';
+    return `<div class="vtr-card" style="${cardBorder}">
       <div class="vtr-card-top">
         <div class="vtr-card-left">
-          <div class="vc-placa">${v.pref||'—'}</div>
+          <div class="vc-placa">${alertaIco}${v.pref||'—'}</div>
           <div class="vc-modelo">${v.marca} ${v.modelo}</div>
           <div class="vc-pref">Placa: ${v.placa} · ${(v.tipo.split(' - ')[0]||v.tipo).substring(0,4)}</div>
         </div>
