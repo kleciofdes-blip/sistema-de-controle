@@ -569,7 +569,7 @@ select option{background:var(--s2)}
 
 <!-- MOBILE MORE MENU -->
 <div class="mn-more-menu" id="mn-more-menu">
-  <div class="mn-more-item" onclick="goTo('os-hist',document.getElementById('mn-os'));closeMobileMore()"><span class="ic">✅</span>OS Realizadas</div>
+  <div class="mn-more-item" onclick="goTo('os-hist',document.getElementById('mn-os'));closeMobileMore()"><span class="ic">✅</span>OS Finalizadas</div>
   <div class="mn-more-item" onclick="goTo('pneus',null);closeMobileMore()"><span class="ic">🔧</span>Estoque Pneus</div>
   <div class="mn-more-item mn-acao" onclick="openKmModal();closeMobileMore()"><span class="ic">📍</span>Atualizar KM</div>
   <div class="mn-more-item mn-acao" onclick="openCad();closeMobileMore()"><span class="ic">➕</span>Nova Viatura</div>
@@ -626,7 +626,7 @@ select option{background:var(--s2)}
     <div class="ni on" onclick="goTo('dash',this)"><span class="ic">📊</span>Dashboard</div>
     <div class="ni" onclick="goTo('vtr',this)"><span class="ic">🚔</span>Viaturas<span class="nb" id="badge">0</span></div>
     <div class="ni" onclick="goTo('os',this)"><span class="ic">📋</span>OS Abertas<span class="nb" id="badge-os">0</span></div>
-    <div class="ni" onclick="goTo('os-hist',this)"><span class="ic">✅</span>OS Realizadas</div>
+    <div class="ni" onclick="goTo('os-hist',this)"><span class="ic">✅</span>OS Finalizadas</div>
     <div class="ni" onclick="goTo('pastilhas',this)"><span class="ic">🔩</span>Pastilhas</div>
     <div class="ni" onclick="goTo('pneus',this)"><span class="ic">🔧</span>Estoque Pneus</div>
     <div class="sb-sec sb-acoes-group">Ações</div>
@@ -697,8 +697,15 @@ select option{background:var(--s2)}
     </div>
 
     <div class="page" id="p-os-hist">
-      <div class="tr-h"><h2>OS Realizadas / Entregues</h2><span class="tr-cnt" id="os-hist-cnt">—</span></div>
-      <div class="tc"><div class="srch-w"><span style="color:var(--txt3)">🔍</span><input type="text" id="osh-srch" placeholder="Buscar placa, nº OS..." oninput="renderOsHist()"></div></div>
+      <div class="tr-h"><h2>OS Finalizadas — Entregues e Canceladas</h2><span class="tr-cnt" id="os-hist-cnt">—</span></div>
+      <div class="tc" style="display:flex;gap:10px;flex-wrap:wrap">
+        <div class="srch-w" style="flex:1;min-width:220px"><span style="color:var(--txt3)">🔍</span><input type="text" id="osh-srch" placeholder="Buscar placa, nº OS..." oninput="renderOsHist()"></div>
+        <select class="flt" id="osh-fst" onchange="renderOsHist()">
+          <option value="">Todas as Finalizadas</option>
+          <option value="ENTREGUE">Só Entregues</option>
+          <option value="CANCELADA">Só Canceladas</option>
+        </select>
+      </div>
       <div class="os-grid-wrap" id="os-hist-list"></div>
     </div>
 
@@ -827,6 +834,7 @@ select option{background:var(--s2)}
       <option value="APROVAÇÃO">Aprovação</option>
       <option value="PLATAFORMA">Plataforma</option>
       <option value="APROVADA">Aprovada</option>
+      <option value="CANCELADA">Cancelada</option>
     </select></div>
   </div>
   <div class="fg fg3" id="os-cman-num-row" style="display:none">
@@ -1246,7 +1254,7 @@ function goTo(p,el){
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('p-'+p).classList.add('on');
   if(el)el.classList.add('on');
-  const t={dash:'Dashboard',vtr:'Viaturas',os:'OS Prime Abertas','os-hist':'OS Realizadas',pastilhas:'Pastilhas',pneus:'Estoque Pneus'};
+  const t={dash:'Dashboard',vtr:'Viaturas',os:'OS Prime Abertas','os-hist':'OS Finalizadas',pastilhas:'Pastilhas',pneus:'Estoque Pneus'};
   document.getElementById('tbt').textContent=t[p]||p;
   const btn=document.getElementById('topbtn');
   const bmap={dash:'openCad()',vtr:'openCad()',os:'openOsModal()','os-hist':'openOsModal()',pastilhas:'openPastModal()',pneus:'openPneu()'};
@@ -1267,7 +1275,7 @@ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.
 // ══════ DASHBOARD ══════════════════════════════════════════════
 function renderDash(){
   const n=vtr.length,em=vtr.filter(v=>v.status==='EM CONDIÇÃO').length,bx=vtr.filter(v=>v.status==='BAIXADA').length,mn=vtr.filter(v=>v.status==='MANUTENÇÃO').length;
-  const osAb=ordens.filter(o=>o.statusOs!=='ENTREGUE').length;
+  const osAb=ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').length;
   const rv=vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length,rp=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)<=1000&&v.km<=v.kmrev).length;
   document.getElementById('badge').textContent=bx+mn;
   document.getElementById('badge-os').textContent=osAb;
@@ -1448,8 +1456,8 @@ function renderRevChart(){
 function renderOsChart(){
   const sts=['AGUARDANDO ENVIAR VTR','EM ORÇAMENTO','COTAÇÕES','AGUARDANDO ORÇAMENTO','VALIDAÇÃO 1º ORÇAMENTO','REAVALIAÇÃO','AGUARDANDO APROVAÇÃO','LIBERAÇÃO','APROVAÇÃO','PLATAFORMA','APROVADA'];
   const map={};sts.forEach(s=>map[s]=0);
-  ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(map[o.statusOs]!==undefined)map[o.statusOs]++;});
-  const abertas=ordens.filter(o=>o.statusOs!=='ENTREGUE').length;
+  ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').forEach(o=>{if(map[o.statusOs]!==undefined)map[o.statusOs]++;});
+  const abertas=ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').length;
   const cols=['#0284C7','#F59E0B','#F97316','#EF4444','#10B981'];
   document.getElementById('dob-os').textContent=abertas;
   makeChart('chart-os',{
@@ -1482,7 +1490,7 @@ function renderVtr(){
   f.sort((a,b)=>String(a.pref||'').localeCompare(String(b.pref||''),'pt',{numeric:true,sensitivity:'base'}));
   document.getElementById('vtr-cnt').textContent=`${f.length} / ${vtr.length}`;
   const osMap={};
-  ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(!osMap[o.placa])osMap[o.placa]=[];osMap[o.placa].push(o.statusOs);});
+  ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').forEach(o=>{if(!osMap[o.placa])osMap[o.placa]=[];osMap[o.placa].push(o.statusOs);});
   const tb=document.getElementById('tbody');
   if(!f.length){tb.innerHTML='<tr><td colspan="17"><div class="empty-c"><span>🔍</span>Nenhuma viatura encontrada</div></td></tr>';return;}
   tb.innerHTML=f.map((v,i)=>{
@@ -1524,7 +1532,7 @@ function renderVtr(){
 }
 
 // ══════ OS ═════════════════════════════════════════════════════
-const OS_STATUS_COL={'AGUARDANDO ENVIAR VTR':'#00e5ff','EM ORÇAMENTO':'#7c3aed','COTAÇÕES':'#a855f7','AGUARDANDO ORÇAMENTO':'#ffb300','VALIDAÇÃO 1º ORÇAMENTO':'#0ea5e9','REAVALIAÇÃO':'#ff6d00','AGUARDANDO APROVAÇÃO':'#ff3d57','LIBERAÇÃO':'#06b6d4','APROVAÇÃO':'#22c55e','PLATAFORMA':'#3b82f6','APROVADA':'#00e676','ENTREGUE':'#00e676'};
+const OS_STATUS_COL={'AGUARDANDO ENVIAR VTR':'#00e5ff','EM ORÇAMENTO':'#7c3aed','COTAÇÕES':'#a855f7','AGUARDANDO ORÇAMENTO':'#ffb300','VALIDAÇÃO 1º ORÇAMENTO':'#0ea5e9','REAVALIAÇÃO':'#ff6d00','AGUARDANDO APROVAÇÃO':'#ff3d57','LIBERAÇÃO':'#06b6d4','APROVAÇÃO':'#22c55e','PLATAFORMA':'#3b82f6','APROVADA':'#00e676','ENTREGUE':'#00e676','CANCELADA':'#94a3b8'};
 
 function osCard(o,idx,hist){
   const col=OS_STATUS_COL[o.statusOs]||'#7a8ba0';
@@ -1540,9 +1548,15 @@ function osCard(o,idx,hist){
   const numLinha  = ehDuplo
     ? `Prime Nº ${o.numOs||'—'} · CMAN Nº ${o.numOsCman||'—'}`
     : `OS Nº ${o.numOs||'—'}`;
+  const sufixoFinal = o.statusOs==='CANCELADA'
+    ? ` · Cancelada: ${fmtDt(o.dtCancelamento||'')}`
+    : (o.dtEntrega ? ` · Entregue: ${fmtDt(o.dtEntrega)}` : '');
   const dataLinha = ehDuplo
-    ? `Prime: ${fmtDt(o.dataOs)} · CMAN: ${fmtDt(o.dataOsCman)}${o.dtEntrega?' · Entregue: '+fmtDt(o.dtEntrega):''}`
-    : `Data: ${fmtDt(o.dataOs)}${o.dtEntrega?' · Entregue: '+fmtDt(o.dtEntrega):''}`;
+    ? `Prime: ${fmtDt(o.dataOs)} · CMAN: ${fmtDt(o.dataOsCman)}${sufixoFinal}`
+    : `Data: ${fmtDt(o.dataOs)}${sufixoFinal}`;
+  const motivoBloco = o.statusOs==='CANCELADA' && o.motivoCancelamento
+    ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(148,163,184,.10);border-left:3px solid #94a3b8;border-radius:4px;font-size:11px;color:var(--txt2)"><b style="color:#64748b">Motivo do cancelamento:</b> ${o.motivoCancelamento}</div>`
+    : '';
   return `<div class="os-card" style="border-top:3px solid ${col}">
     <div class="os-card-top">
       <div class="os-head-left">
@@ -1559,8 +1573,13 @@ function osCard(o,idx,hist){
       <div class="os-field" style="grid-column:2/-1"><div class="os-field-lbl">Observações</div><div class="os-field-val" style="font-size:11px">${o.obs||'—'}</div></div>
     </div>
     ${servs.length?`<div class="os-servicos">${servs.map(s=>`<span class="os-serv-tag">⚙ ${s}</span>`).join('')}</div>`:''}
+    ${motivoBloco}
     <div class="os-actions">
-      ${!hist?`<button class="btn btn-sm btn-gr" onclick="entregarOs(${idx})">✅ Marcar Entregue</button>`:`<button class="btn btn-sm" style="background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3)" onclick="reabrirOs(${idx})">↩ Reabrir OS</button>`}
+      ${!hist
+        ? `<button class="btn btn-sm btn-gr" onclick="entregarOs(${idx})">✅ Marcar Entregue</button>
+           <button class="btn btn-sm" style="background:rgba(148,163,184,.14);color:#64748b;border:1px solid rgba(148,163,184,.32)" onclick="cancelarOs(${idx})">🚫 Cancelar OS</button>`
+        : `<button class="btn btn-sm" style="background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3)" onclick="reabrirOs(${idx})">↩ Reabrir OS</button>`
+      }
       <button class="btn btn-sm" style="background:transparent;border-color:var(--border)" onclick="editarOs(${idx})">✏ Editar</button>
       <button class="btn btn-sm btn-rd" onclick="excluirOs(${idx})">🗑 Excluir</button>
     </div>
@@ -1578,7 +1597,8 @@ function _cmpNumOs(a, b){
 function renderOs(){
   const q=(document.getElementById('os-srch').value||'').toLowerCase();
   const fs=document.getElementById('os-fst').value;
-  const abertas=ordens.map((o,i)=>({...o,_i:i})).filter(o=>o.statusOs!=='ENTREGUE');
+  // Abertas: não entregues nem canceladas
+  const abertas=ordens.map((o,i)=>({...o,_i:i})).filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA');
   let f=abertas.filter(o=>
     (!q||(o.placa.toLowerCase().includes(q)||(o.numOs||'').toLowerCase().includes(q)||(o.modelo||'').toLowerCase().includes(q)))&&
     (!fs||o.statusOs===fs)
@@ -1594,11 +1614,21 @@ function renderOs(){
 
 function renderOsHist(){
   const q=(document.getElementById('osh-srch').value||'').toLowerCase();
-  const hist=ordens.map((o,i)=>({...o,_i:i})).filter(o=>o.statusOs==='ENTREGUE');
-  let f=hist.filter(o=>(!q||(o.placa.toLowerCase().includes(q)||(o.numOs||'').toLowerCase().includes(q))));
+  const fst=(document.getElementById('osh-fst')?.value)||'';
+  // Realizadas: entregues OU canceladas (ambas são estados finais)
+  const hist=ordens.map((o,i)=>({...o,_i:i})).filter(o=>o.statusOs==='ENTREGUE' || o.statusOs==='CANCELADA');
+  let f=hist.filter(o=>
+    (!q||(o.placa.toLowerCase().includes(q)||(o.numOs||'').toLowerCase().includes(q))) &&
+    (!fst||o.statusOs===fst)
+  );
   // Histórico: nº da OS crescente
   f.sort(_cmpNumOs);
-  document.getElementById('os-hist-cnt').textContent=`${f.length} OS realizadas`;
+  const nEntregues=hist.filter(o=>o.statusOs==='ENTREGUE').length;
+  const nCanceladas=hist.filter(o=>o.statusOs==='CANCELADA').length;
+  const partes=[];
+  if(nEntregues) partes.push(nEntregues+' entregue'+(nEntregues>1?'s':''));
+  if(nCanceladas) partes.push(nCanceladas+' cancelada'+(nCanceladas>1?'s':''));
+  document.getElementById('os-hist-cnt').textContent=partes.length?partes.join(' · '):'0 OS';
   const el=document.getElementById('os-hist-list');
   if(!f.length){el.innerHTML='<div class="empty-c" style="grid-column:1/-1"><span>✅</span>Nenhuma OS realizada ainda</div>';return;}
   el.innerHTML=f.map(o=>osCard(o,o._i,true)).join('');
@@ -1724,11 +1754,26 @@ function entregarOs(idx){
   if(blockSeVisitante())return;
   if(!confirm('Marcar esta OS como Entregue/Realizada?'))return;
   // Guarda o status anterior pra caso o usuário queira reabrir depois
-  if(ordens[idx].statusOs !== 'ENTREGUE') ordens[idx].statusAnterior = ordens[idx].statusOs;
+  if(ordens[idx].statusOs !== 'ENTREGUE' && ordens[idx].statusOs !== 'CANCELADA') ordens[idx].statusAnterior = ordens[idx].statusOs;
   ordens[idx].statusOs='ENTREGUE';
   ordens[idx].dtEntrega=hoje();
+  ordens[idx].dtCancelamento='';
   renderOs();renderOsHist();renderDash();
   save().then(ok=>{ if(ok) toast('✅ OS marcada como entregue e sincronizada!'); });
+}
+
+function cancelarOs(idx){
+  if(blockSeVisitante())return;
+  const o=ordens[idx];if(!o)return;
+  const motivo=prompt('Cancelar OS '+(o.numOs||'')+'?\n\nInforme o motivo do cancelamento (opcional):','');
+  if(motivo===null)return; // clicou em Cancelar do prompt
+  if(ordens[idx].statusOs !== 'ENTREGUE' && ordens[idx].statusOs !== 'CANCELADA') ordens[idx].statusAnterior = ordens[idx].statusOs;
+  ordens[idx].statusOs='CANCELADA';
+  ordens[idx].dtCancelamento=hoje();
+  ordens[idx].motivoCancelamento=motivo.trim();
+  ordens[idx].dtEntrega='';
+  renderOs();renderOsHist();renderDash();
+  save().then(ok=>{ if(ok) toast('🚫 OS cancelada.'); });
 }
 function reabrirOs(idx){
   if(blockSeVisitante())return;
@@ -2401,10 +2446,10 @@ function exportXLSX(tipo){
     const ws=utils.json_to_sheet(rows);ws['!cols']=[{wch:10},{wch:22},{wch:14},{wch:10},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12}];utils.book_append_sheet(wb,ws,'Revisões');
   }
   if(tipo==='os'||tipo==='geral'){
-    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE').map((o,i)=>({'#':i+1,'Nº OS':o.numOs,'Data OS':fmtDt(o.dataOs),'Placa':o.placa,'Prefixo':o.prefixo,'Modelo':o.modelo,'Status':o.statusOs,'Local':o.local,'Serviços':(o.servicos||[]).join(', '),'Observações':o.obs||''}));
+    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').map((o,i)=>({'#':i+1,'Nº OS':o.numOs,'Data OS':fmtDt(o.dataOs),'Placa':o.placa,'Prefixo':o.prefixo,'Modelo':o.modelo,'Status':o.statusOs,'Local':o.local,'Serviços':(o.servicos||[]).join(', '),'Observações':o.obs||''}));
     const ws=utils.json_to_sheet(ab.length?ab:[{Info:'Sem OS abertas'}]);utils.book_append_sheet(wb,ws,'OS Abertas');
     const en=ordens.filter(o=>o.statusOs==='ENTREGUE').map((o,i)=>({'#':i+1,'Nº OS':o.numOs,'Data OS':fmtDt(o.dataOs),'Data Entrega':fmtDt(o.dtEntrega),'Placa':o.placa,'Modelo':o.modelo,'Serviços':(o.servicos||[]).join(', ')}));
-    const ws2=utils.json_to_sheet(en.length?en:[{Info:'Sem OS realizadas'}]);utils.book_append_sheet(wb,ws2,'OS Realizadas');
+    const ws2=utils.json_to_sheet(en.length?en:[{Info:'Sem OS realizadas'}]);utils.book_append_sheet(wb,ws2,'OS Finalizadas');
   }
   if(tipo==='past'||tipo==='geral'){
     const rows=vtr.map(v=>{const prx=v.dtpast&&v.durpast?addMeses(v.dtpast,v.durpast):'';const mr=prx?diffMeses(hoje(),prx):null;return{'Placa':v.placa,'Prefixo':v.pref,'Marca/Modelo':v.marca+' '+v.modelo,'Pastilhas%':v.past,'Data Troca':fmtDt(v.dtpast),'Duração(meses)':v.durpast||'—','Próxima Troca':fmtDt(prx),'Meses Restantes':mr!==null?mr:'—','Status':pastStatus(v.past,v.dtpast,v.durpast)};});
@@ -2415,7 +2460,7 @@ function exportXLSX(tipo){
     const ws=utils.json_to_sheet(rows.length?rows:[{Info:'Estoque vazio'}]);utils.book_append_sheet(wb,ws,'Estoque Pneus');
   }
   if(tipo==='geral'){
-    const rs=[{'Indicador':'Total Frota','Valor':vtr.length},{'Indicador':'Em Condição','Valor':vtr.filter(v=>v.status==='EM CONDIÇÃO').length},{'Indicador':'Baixadas','Valor':vtr.filter(v=>v.status==='BAIXADA').length},{'Indicador':'Manutenção','Valor':vtr.filter(v=>v.status==='MANUTENÇÃO').length},{'Indicador':'OS Abertas','Valor':ordens.filter(o=>o.statusOs!=='ENTREGUE').length},{'Indicador':'OS Realizadas','Valor':ordens.filter(o=>o.statusOs==='ENTREGUE').length},{'Indicador':'Rev. Vencida','Valor':vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length},{'Indicador':'Pneus em Estoque','Valor':pneus.length},{'Indicador':'Data Relatório','Valor':dateTimeStr()}];
+    const rs=[{'Indicador':'Total Frota','Valor':vtr.length},{'Indicador':'Em Condição','Valor':vtr.filter(v=>v.status==='EM CONDIÇÃO').length},{'Indicador':'Baixadas','Valor':vtr.filter(v=>v.status==='BAIXADA').length},{'Indicador':'Manutenção','Valor':vtr.filter(v=>v.status==='MANUTENÇÃO').length},{'Indicador':'OS Abertas','Valor':ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').length},{'Indicador':'OS Finalizadas','Valor':ordens.filter(o=>o.statusOs==='ENTREGUE').length},{'Indicador':'Rev. Vencida','Valor':vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length},{'Indicador':'Pneus em Estoque','Valor':pneus.length},{'Indicador':'Data Relatório','Valor':dateTimeStr()}];
     const ws=utils.json_to_sheet(rs);utils.book_append_sheet(wb,ws,'Resumo');
   }
   const nm={'vtr':'viaturas','rev':'revisoes','os':'os','past':'pastilhas','pneu':'pneus','geral':'relatorio_geral'};
@@ -2473,7 +2518,7 @@ function exportPDF(tipo){
     const rd=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{...v,d:d,rs:v.kmrev>0?(d<0?'VENCIDA':d<=1000?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>(a.d||999999)-(b.d||999999));
     doc.autoTable({...ts,head:[['#','Pref.','Placa','Marca/Modelo','Status','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Restante','Status Rev.']],body:rd.map((v,i)=>[i+1,v.pref||'—',v.placa,v.marca+' '+v.modelo,v.status,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),v.d!==null?(v.d>=0?'+'+v.d.toLocaleString():v.d.toLocaleString()):'—',v.rs]),didDrawCell:d=>{if(d.section==='body'&&d.column.index===10){if(d.cell.raw==='VENCIDA')d.cell.styles.textColor=[239,68,68];else if(d.cell.raw==='PRÓXIMA')d.cell.styles.textColor=[245,158,11];else if(d.cell.raw==='EM DIA')d.cell.styles.textColor=[16,185,129];d.cell.styles.fontStyle='bold';}}});
   }else if(tipo==='os'){
-    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE');
+    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA');
     addH('OS PRIME ABERTAS',ab.length+' OS em aberto');
     if(!ab.length){doc.setTextColor(100,116,139);doc.setFontSize(10);doc.text('Nenhuma OS aberta.',W/2,55,{align:'center'});}
     else doc.autoTable({...ts,head:[['Nº OS','Data','Placa','Prefixo','Modelo','Status','Local','Serviços']],body:ab.map(o=>[o.numOs,fmtDt(o.dataOs),o.placa,o.prefixo,o.modelo,o.statusOs,o.local,(o.servicos||[]).join(', ')])});
@@ -2492,7 +2537,7 @@ function exportPDF(tipo){
     const em=vtr.filter(v=>v.status==='EM CONDIÇÃO').length,bx=vtr.filter(v=>v.status==='BAIXADA').length,mn=vtr.filter(v=>v.status==='MANUTENÇÃO').length;
     addH('RELATÓRIO GERAL CONSOLIDADO','Frota: '+vtr.length+' · OS: '+ordens.length+' · Pneus: '+pneus.length+' itens');
     const H=doc.internal.pageSize.getHeight();
-    [{l:'Em Condição',v:em,c:[16,185,129]},{l:'Baixadas',v:bx,c:[239,68,68]},{l:'Manutenção',v:mn,c:[245,158,11]},{l:'OS Abertas',v:ordens.filter(o=>o.statusOs!=='ENTREGUE').length,c:[249,115,22]},{l:'Rev.Vencida',v:vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length,c:[239,68,68]},{l:'Total Frota',v:vtr.length,c:[2,132,199]}].forEach((b,i)=>{
+    [{l:'Em Condição',v:em,c:[16,185,129]},{l:'Baixadas',v:bx,c:[239,68,68]},{l:'Manutenção',v:mn,c:[245,158,11]},{l:'OS Abertas',v:ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').length,c:[249,115,22]},{l:'Rev.Vencida',v:vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length,c:[239,68,68]},{l:'Total Frota',v:vtr.length,c:[2,132,199]}].forEach((b,i)=>{
       const bx0=8+i*46,by=32;
       // Card branco com borda fina cinza
       doc.setFillColor(255,255,255);doc.setDrawColor(226,232,240);doc.setLineWidth(0.3);
@@ -2508,7 +2553,7 @@ function exportPDF(tipo){
     });
     doc.autoTable({...ts,startY:54,head:[['#','Pref.','Placa','Tipo','Marca/Modelo','KM Atual','Data Últ.Rev.','KM Próx.','Data Próx.Rev.','KM Rest.','Past.%','Status']],body:data.map((v,i)=>{const d=v.kmrev>0?v.kmrev-v.km:null;return[i+1,v.pref||'—',v.placa,v.tipo.split(' - ')[0],v.marca+' '+v.modelo,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),d!==null?(d>=0?'+'+d.toLocaleString():d.toLocaleString()):'—',v.past+'%',v.status];}),didDrawCell:d=>{if(d.section==='body'&&d.column.index===11){if(d.cell.raw==='EM CONDIÇÃO')d.cell.styles.textColor=[16,185,129];else if(d.cell.raw==='BAIXADA')d.cell.styles.textColor=[239,68,68];else d.cell.styles.textColor=[245,158,11];d.cell.styles.fontStyle='bold';}}});
     doc.addPage();addH('OS & PASTILHAS','Ordens de Serviço e Controle de Pastilhas');
-    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE');
+    const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA');
     doc.autoTable({...ts,head:[['Nº OS','Data','Placa','Modelo','Status OS','Serviços']],body:ab.length?ab.map(o=>[o.numOs,fmtDt(o.dataOs),o.placa,o.modelo,o.statusOs,(o.servicos||[]).join(', ')]):[['—','—','—','Sem OS abertas','—','—']]});
     doc.autoTable({...ts,head:[['Placa','Marca/Modelo','Past.%','Data Troca','Próx.Troca','Meses Rest.','Status']],body:vtr.map(v=>{const prx=v.dtpast&&v.durpast?addMeses(v.dtpast,v.durpast):'';return[v.placa,v.marca+' '+v.modelo,v.past+'%',fmtDt(v.dtpast),fmtDt(prx),prx?diffMeses(hoje(),prx):'—',pastStatus(v.past,v.dtpast,v.durpast)];})});
   }
@@ -2873,7 +2918,7 @@ function syncMobileBadges(){
   const bo = document.getElementById('m-badge-os');
   if(!bv||!bo) return;
   const bvn = vtr.filter(v=>v.status==='BAIXADA'||v.status==='MANUTENÇÃO').length;
-  const bon = ordens.filter(o=>o.statusOs!=='ENTREGUE').length;
+  const bon = ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').length;
   bv.textContent = bvn; bv.style.display = bvn>0?'block':'none';
   bo.textContent = bon; bo.style.display = bon>0?'block':'none';
 }
@@ -2905,7 +2950,7 @@ function renderVtrCards(){
   if(!f.length){el.innerHTML='<div class="empty-c"><span>🔍</span>Nenhuma viatura encontrada</div>';return;}
 
   const osMap={};
-  ordens.filter(o=>o.statusOs!=='ENTREGUE').forEach(o=>{if(!osMap[o.placa])osMap[o.placa]=[];osMap[o.placa].push(o.statusOs);});
+  ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA').forEach(o=>{if(!osMap[o.placa])osMap[o.placa]=[];osMap[o.placa].push(o.statusOs);});
 
   el.innerHTML = f.map(v=>{
     const d = v.kmrev>0 ? v.kmrev-v.km : null;
