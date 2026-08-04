@@ -250,6 +250,14 @@ td{padding:10px 13px;vertical-align:middle;background:var(--s1);border-bottom:1p
 .rev-it-st{font-weight:700;font-size:13px;font-family:var(--mono);white-space:nowrap}
 .rev-it-st.r{color:var(--red)}
 .rev-it-st.y{color:var(--amber)}
+
+/* Alerta por TEMPO (data ≤ 30 dias) — tom laranja pra distinguir do amarelo (km) */
+#vtr-table tr.rev-proxima-tempo td,
+#vtr-table tr.rev-proxima-tempo td:nth-child(1),
+#vtr-table tr.rev-proxima-tempo td:nth-child(2){background:#ffefdb !important;border-top:1px solid #ffcc80 !important;border-bottom:1px solid #ffcc80 !important}
+#vtr-table tr.rev-proxima-tempo:hover td,
+#vtr-table tr.rev-proxima-tempo:hover td:nth-child(1),
+#vtr-table tr.rev-proxima-tempo:hover td:nth-child(2){background:#ffdfb5 !important}
 .past-actions{display:flex;gap:7px;margin-top:10px}
 /* OS CARDS */
 .os-grid-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px}
@@ -1212,6 +1220,82 @@ function startRealtimeSync(){
 
 // ══════ UTILS ══════════════════════════════════════════════════
 function fmtDt(d){if(!d)return'—';try{const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;}catch{return d||'—';}}
+
+// ═══════════════════════════════════════════════════════════════════
+// STATUS DE REVISÃO — considera KM restante E prazo por tempo (dtprev)
+// ═══════════════════════════════════════════════════════════════════
+// Retorna:
+//   { nivel: 'ok'|'proxima'|'proxima-tempo'|'vencida'|null,
+//     kmRest: <número ou null>,
+//     diasRest: <número ou null>,
+//     motivo: 'km'|'tempo'|'ambos',
+//     icone: '⚠' ou '',
+//     titulo: texto pra tooltip
+//   }
+// Regras:
+//   • KM: vencida (kmRest<0), próxima (0..1000km), ok
+//   • Tempo: vencida (dias<0), próxima-tempo (0..30 dias), ok
+//   • O pior estado prevalece (vencida > proxima > proxima-tempo > ok)
+function _statusRev(v){
+  if(!v) return {nivel:null};
+  const kmRest = (v.kmrev > 0) ? (v.kmrev - v.km) : null;
+  let diasRest = null;
+  if(v.dtprev){
+    const alvo = new Date(v.dtprev + 'T00:00:00');
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    diasRest = Math.floor((alvo - hoje) / 86400000);
+  }
+  // Sem nenhum critério cadastrado
+  if(kmRest === null && diasRest === null) return {nivel:null, kmRest:null, diasRest:null};
+
+  // Vencida — km OU tempo negativo
+  const vencidaKm = kmRest !== null && kmRest < 0;
+  const vencidaTempo = diasRest !== null && diasRest < 0;
+  if(vencidaKm || vencidaTempo){
+    const motivo = vencidaKm && vencidaTempo ? 'ambos' : (vencidaKm ? 'km' : 'tempo');
+    const partes = [];
+    if(vencidaKm) partes.push(`${Math.abs(kmRest).toLocaleString()} km`);
+    if(vencidaTempo) partes.push(`${Math.abs(diasRest)} dia${Math.abs(diasRest)===1?'':'s'}`);
+    return {
+      nivel: 'vencida', kmRest, diasRest, motivo,
+      icone: '⚠',
+      titulo: 'Revisão VENCIDA há ' + partes.join(' / ')
+    };
+  }
+
+  // Próxima por KM (≤1000 km) — prioridade sobre proxima-tempo
+  const proxKm = kmRest !== null && kmRest <= 1000;
+  const proxTempo = diasRest !== null && diasRest <= 30;
+
+  if(proxKm){
+    const partes = [`${kmRest.toLocaleString()} km`];
+    if(proxTempo) partes.push(`${diasRest} dia${diasRest===1?'':'s'}`);
+    return {
+      nivel: 'proxima', kmRest, diasRest,
+      motivo: proxTempo ? 'ambos' : 'km',
+      icone: '⚠',
+      titulo: 'Revisão próxima — faltam ' + partes.join(' / ')
+    };
+  }
+  if(proxTempo){
+    return {
+      nivel: 'proxima-tempo', kmRest, diasRest,
+      motivo: 'tempo',
+      icone: '⚠',
+      titulo: `Revisão em ${diasRest} dia${diasRest===1?'':'s'} (prazo por tempo)`
+    };
+  }
+  return {nivel: 'ok', kmRest, diasRest, motivo: null, icone: '', titulo: 'Revisão em dia'};
+}
+// Retorna label textual pra planilhas/exports
+function _statusRevTxt(v){
+  const r = _statusRev(v);
+  if(!r.nivel) return '—';
+  if(r.nivel === 'vencida') return 'VENCIDA';
+  if(r.nivel === 'proxima') return 'PRÓXIMA (KM)';
+  if(r.nivel === 'proxima-tempo') return 'PRÓXIMA (TEMPO)';
+  return 'EM DIA';
+}
 function diffMeses(d1,d2){if(!d1||!d2)return null;const a=new Date(d1),b=new Date(d2);return Math.round((b-a)/(1000*60*60*24*30.44));}
 function addMeses(d,m){if(!d||!m)return'';const dt=new Date(d);dt.setMonth(dt.getMonth()+parseInt(m));return dt.toISOString().split('T')[0];}
 function hoje(){return new Date().toISOString().split('T')[0];}
@@ -1432,13 +1516,24 @@ function renderAlerts(){
 }
 
 function renderRevChart(){
-  const ok=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)>1000).length;
-  const prx=vtr.filter(v=>v.kmrev>0&&(v.kmrev-v.km)<=1000&&v.km<=v.kmrev).length;
-  const vc=vtr.filter(v=>v.kmrev>0&&v.km>v.kmrev).length;
-  const nd=vtr.filter(v=>!v.kmrev||v.kmrev<=0).length;
-  const labels=['Em dia','Próxima (≤500km)','Vencida','Sem revisão'];
-  const data=[ok,prx,vc,nd];
-  const cols=['#10B981','#F59E0B','#EF4444','#94A3B8'];
+  // Agora usa _statusRev unificado (KM + tempo). Categorias:
+  //  Em dia — nenhum critério em alerta
+  //  Próxima (KM) — kmRest ≤ 1000
+  //  Próxima (Tempo) — só tempo ≤ 30 dias (kmRest ainda folgado)
+  //  Vencida — km OU tempo negativo
+  //  Sem cadastro — sem kmrev nem dtprev
+  let ok=0, pxKm=0, pxTempo=0, vc=0, nd=0;
+  vtr.forEach(v=>{
+    const r = _statusRev(v);
+    if(r.nivel === null) nd++;
+    else if(r.nivel === 'vencida') vc++;
+    else if(r.nivel === 'proxima') pxKm++;
+    else if(r.nivel === 'proxima-tempo') pxTempo++;
+    else ok++;
+  });
+  const labels=['Em dia','Próxima (KM)','Próxima (Tempo)','Vencida','Sem cadastro'];
+  const data=[ok,pxKm,pxTempo,vc,nd];
+  const cols=['#10B981','#F59E0B','#F97316','#EF4444','#94A3B8'];
   document.getElementById('dob-rv').textContent=`${vtr.length} viaturas`;
   makeChart('chart-rev',{
     type:'bar',
@@ -1506,9 +1601,11 @@ function renderVtr(){
     const tp=(v.tipo.split(' - ')[0]||v.tipo).substring(0,4);
     const osV=osMap[v.placa];
     const osHtml=osV&&osV.length?`<span class="op">${osV[0]}</span>`:'<span style="color:var(--txt3);font-size:10px">—</span>';
-    // Alerta visual: vencida (vermelho) ou próxima ≤1000km (amarelo) — linha toda colorida via CSS class
-    const revAlerta = d!==null && d<0 ? 'vencida' : (d!==null && d<=1000 ? 'proxima' : null);
-    const alertaIco = revAlerta==='vencida' ? '<span title="Revisão vencida" style="color:#dc2626;font-weight:700;margin-right:4px;font-size:14px">⚠</span>' : revAlerta==='proxima' ? '<span title="Revisão próxima — faltam '+d.toLocaleString()+' km" style="color:#d97706;font-weight:700;margin-right:4px;font-size:14px">⚠</span>' : '';
+    // Alerta unificado: KM restante + tempo restante (≤30 dias)
+    const _r = _statusRev(v);
+    const revAlerta = _r.nivel && _r.nivel !== 'ok' ? _r.nivel : null;
+    const _corIco = _r.nivel==='vencida' ? '#dc2626' : (_r.nivel==='proxima' ? '#d97706' : (_r.nivel==='proxima-tempo' ? '#f97316' : null));
+    const alertaIco = revAlerta ? `<span title="${_r.titulo}" style="color:${_corIco};font-weight:700;margin-right:4px;font-size:14px">${_r.icone}</span>` : '';
     return `<tr class="${revAlerta?'rev-'+revAlerta:''}">
       <td style="color:var(--txt3);font-family:var(--mono);font-size:10px">${i+1}</td>
       <td>${alertaIco}<span class="placa" style="background:var(--cyan);color:#fff;padding:3px 8px;border-radius:6px;font-weight:700">${v.pref||'—'}</span></td>
@@ -2444,7 +2541,22 @@ function exportXLSX(tipo){
     const ws=utils.json_to_sheet(rows);ws['!cols']=[{wch:4},{wch:10},{wch:10},{wch:8},{wch:12},{wch:16},{wch:10},{wch:14},{wch:14},{wch:14},{wch:12},{wch:14},{wch:9},{wch:10},{wch:14},{wch:16}];utils.book_append_sheet(wb,ws,'Viaturas');
   }
   if(tipo==='rev'||tipo==='geral'){
-    const rows=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{'Placa':v.placa,'Marca/Modelo':v.marca+' '+v.modelo,'Status':v.status,'KM Atual':v.km,'Data Últ.Rev.':fmtDt(v.dtrev),'KM Próx.Rev.':v.kmrev||0,'Data Próx.Rev.':fmtDt(v.dtprev),'KM Restante':d!==null?d:0,'Status Rev.':v.kmrev>0?(d<0?'VENCIDA':d<=1000?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>a['KM Restante']-b['KM Restante']);
+    const rows=data.map(v=>{
+      const d=v.kmrev>0?v.kmrev-v.km:null;
+      const _rXls = _statusRev(v);
+      return {
+        'Placa':v.placa,
+        'Marca/Modelo':v.marca+' '+v.modelo,
+        'Status':v.status,
+        'KM Atual':v.km,
+        'Data Últ.Rev.':fmtDt(v.dtrev),
+        'KM Próx.Rev.':v.kmrev||0,
+        'Data Próx.Rev.':fmtDt(v.dtprev),
+        'KM Restante':d!==null?d:0,
+        'Dias Restantes':_rXls.diasRest!==null?_rXls.diasRest:'—',
+        'Status Rev.':_statusRevTxt(v)
+      };
+    }).sort((a,b)=>a['KM Restante']-b['KM Restante']);
     const ws=utils.json_to_sheet(rows);ws['!cols']=[{wch:10},{wch:22},{wch:14},{wch:10},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12}];utils.book_append_sheet(wb,ws,'Revisões');
   }
   if(tipo==='os'||tipo==='geral'){
@@ -2517,8 +2629,39 @@ function exportPDF(tipo){
     doc.autoTable({...ts,head:[['#','Pref.','Placa','Tipo','Marca/Modelo','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Rest.','Pneus','Past.','Status','Local']],body:data.map((v,i)=>{const d=v.kmrev>0?v.kmrev-v.km:null;return[i+1,v.pref,v.placa,v.tipo.split(' - ')[0],v.marca+' '+v.modelo,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),d!==null?(d>=0?'+'+d.toLocaleString():d.toLocaleString()):'—',v.pneus+'%',v.past+'%',v.status,v.local||'—'];}),didDrawCell:d=>{if(d.section==='body'&&d.column.index===12){if(d.cell.raw==='EM CONDIÇÃO')d.cell.styles.textColor=[16,185,129];else if(d.cell.raw==='BAIXADA')d.cell.styles.textColor=[239,68,68];else d.cell.styles.textColor=[245,158,11];d.cell.styles.fontStyle='bold';}}});
   }else if(tipo==='rev'){
     addH('RELATÓRIO DE REVISÕES',data.length+' viatura(s)');
-    const rd=data.map(v=>{const d=v.kmrev>0?v.kmrev-v.km:null;return{...v,d:d,rs:v.kmrev>0?(d<0?'VENCIDA':d<=1000?'PRÓXIMA':'EM DIA'):'—'};}).sort((a,b)=>(a.d||999999)-(b.d||999999));
-    doc.autoTable({...ts,head:[['#','Pref.','Placa','Marca/Modelo','Status','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Restante','Status Rev.']],body:rd.map((v,i)=>[i+1,v.pref||'—',v.placa,v.marca+' '+v.modelo,v.status,v.km.toLocaleString(),fmtDt(v.dtrev),v.kmrev>0?v.kmrev.toLocaleString():'—',fmtDt(v.dtprev),v.d!==null?(v.d>=0?'+'+v.d.toLocaleString():v.d.toLocaleString()):'—',v.rs]),didDrawCell:d=>{if(d.section==='body'&&d.column.index===10){if(d.cell.raw==='VENCIDA')d.cell.styles.textColor=[239,68,68];else if(d.cell.raw==='PRÓXIMA')d.cell.styles.textColor=[245,158,11];else if(d.cell.raw==='EM DIA')d.cell.styles.textColor=[16,185,129];d.cell.styles.fontStyle='bold';}}});
+    const rd=data.map(v=>{
+      const _r = _statusRev(v);
+      return {
+        ...v,
+        d: _r.kmRest,
+        diasR: _r.diasRest,
+        rs: _statusRevTxt(v),
+        // score de ordenação: vencidas primeiro, depois por prazo mais curto (km ou dias)
+        _score: _r.nivel==='vencida' ? -Infinity : Math.min(_r.kmRest??999999, (_r.diasRest??999999)*100)
+      };
+    }).sort((a,b)=>a._score-b._score);
+    doc.autoTable({...ts,
+      head:[['#','Pref.','Placa','Marca/Modelo','Status','KM Atual','Data Últ.Rev.','KM Próx.Rev.','Data Próx.Rev.','KM Rest.','Dias Rest.','Status Rev.']],
+      body:rd.map((v,i)=>[
+        i+1, v.pref||'—', v.placa, v.marca+' '+v.modelo, v.status,
+        v.km.toLocaleString(), fmtDt(v.dtrev),
+        v.kmrev>0?v.kmrev.toLocaleString():'—',
+        fmtDt(v.dtprev),
+        v.d!==null?(v.d>=0?'+'+v.d.toLocaleString():v.d.toLocaleString()):'—',
+        v.diasR!==null?(v.diasR>=0?'+'+v.diasR:v.diasR):'—',
+        v.rs
+      ]),
+      didDrawCell:d=>{
+        if(d.section==='body' && d.column.index===11){
+          const raw = d.cell.raw||'';
+          if(raw==='VENCIDA') d.cell.styles.textColor=[239,68,68];
+          else if(raw==='PRÓXIMA (KM)') d.cell.styles.textColor=[245,158,11];
+          else if(raw==='PRÓXIMA (TEMPO)') d.cell.styles.textColor=[249,115,22];
+          else if(raw==='EM DIA') d.cell.styles.textColor=[16,185,129];
+          d.cell.styles.fontStyle='bold';
+        }
+      }
+    });
   }else if(tipo==='os'){
     const ab=ordens.filter(o=>o.statusOs!=='ENTREGUE' && o.statusOs!=='CANCELADA');
     addH('OS PRIME ABERTAS',ab.length+' OS em aberto');
@@ -2964,9 +3107,12 @@ function renderVtrCards(){
     const bc = v.past<=20?'pf-r':v.past<=50?'pf-y':'pf-g';
     const osV = osMap[v.placa];
     const osHtml = osV&&osV.length ? `<span class="op" style="font-size:10px">${osV[0]}</span>` : '';
-    const revAlerta = d!==null && d<0 ? 'vencida' : (d!==null && d<=1000 ? 'proxima' : null);
-    const cardBorder = revAlerta==='vencida' ? 'border-left:4px solid #ef4444;' : revAlerta==='proxima' ? 'border-left:4px solid #ffb300;' : '';
-    const alertaIco = revAlerta==='vencida' ? '<span style="color:#ef4444;font-weight:700;margin-right:6px;font-size:16px" title="Revisão vencida">⚠</span>' : revAlerta==='proxima' ? '<span style="color:#ffb300;font-weight:700;margin-right:6px;font-size:16px" title="Revisão em '+d.toLocaleString()+' km">⚠</span>' : '';
+    // Alerta unificado KM + tempo
+    const _rCard = _statusRev(v);
+    const revAlerta = _rCard.nivel && _rCard.nivel !== 'ok' ? _rCard.nivel : null;
+    const _corCardIco = _rCard.nivel==='vencida' ? '#ef4444' : (_rCard.nivel==='proxima' ? '#ffb300' : (_rCard.nivel==='proxima-tempo' ? '#f97316' : null));
+    const cardBorder = _corCardIco ? `border-left:4px solid ${_corCardIco};` : '';
+    const alertaIco = revAlerta ? `<span style="color:${_corCardIco};font-weight:700;margin-right:6px;font-size:16px" title="${_rCard.titulo}">${_rCard.icone}</span>` : '';
     return `<div class="vtr-card" style="${cardBorder}">
       <div class="vtr-card-top">
         <div class="vtr-card-left">
