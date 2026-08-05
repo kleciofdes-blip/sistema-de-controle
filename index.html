@@ -1296,6 +1296,77 @@ function _statusRevTxt(v){
   if(r.nivel === 'proxima-tempo') return 'PRÓXIMA (TEMPO)';
   return 'EM DIA';
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PNEUS / PASTILHAS — auto-decrementa % conforme KM avança
+// Ciclo por modelo: L200, Titânio, Trailblazer = 5.000 km; demais = 10.000 km
+// Alerta 500 km antes (4.500 / 9.000 km após última troca)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const MODELOS_CICLO_CURTO = /L\s*[-]?\s*200|LTWO?HUNDRED|TITAN[IÍ]O?|TRAIL[\s]*BLAZER|TRYBLAZER|TRAILBAZER/i;
+
+function _cicloVeiculo(v){
+  const modelo = ((v.marca||'')+' '+(v.modelo||'')+' '+(v.versao||'')).toUpperCase();
+  return MODELOS_CICLO_CURTO.test(modelo) ? 5000 : 10000;
+}
+
+// Status por peça (pneu ou past) baseado em km desde última troca
+// Retorna { nivel:'ok'|'proximo'|'vencido', kmDesde, restante, ciclo, titulo }
+function _statusPecaKm(v, kmUltField){
+  const ciclo = _cicloVeiculo(v);
+  const alertaMargem = 500; // alerta 500 km antes de completar o ciclo
+  const kmUlt = Number(v[kmUltField]) || 0;
+  if(!kmUlt || !v.km) return {nivel:null, ciclo};
+  const kmDesde = v.km - kmUlt;
+  if(kmDesde < 0) return {nivel:null, ciclo}; // dados inconsistentes (não alerta)
+  const restante = ciclo - kmDesde;
+  if(restante <= 0) return {
+    nivel:'vencido', kmDesde, restante, ciclo,
+    titulo: `Ciclo VENCIDO — passou ${Math.abs(restante).toLocaleString()} km do prazo (ciclo de ${ciclo.toLocaleString()} km)`
+  };
+  if(kmDesde >= (ciclo - alertaMargem)) return {
+    nivel:'proximo', kmDesde, restante, ciclo,
+    titulo: `Falta${restante===1?'':'m'} ${restante.toLocaleString()} km para completar ciclo de ${ciclo.toLocaleString()} km`
+  };
+  return {nivel:'ok', kmDesde, restante, ciclo, titulo:`${restante.toLocaleString()} km até próxima troca`};
+}
+
+function _statusPneu(v){ return _statusPecaKm(v, 'kmultpneu'); }
+function _statusPast(v){ return _statusPecaKm(v, 'kmultpast'); }
+
+// Auto-calcula % da peça baseado no km desde última troca.
+// Modelo: cada ciclo (5k ou 10k km) reduz 20% da vida útil da peça.
+// 100% = novo (kmDesde = 0). Após 5 ciclos → 0%.
+// Se v.kmult<peça> ausente, retorna o % já cadastrado (sem alterar).
+function _pctPecaCalculado(v, kmUltField, pctField){
+  const kmUlt = Number(v[kmUltField]) || 0;
+  const pctBase = 100; // sempre 100% na última troca registrada
+  if(!kmUlt || !v.km || v.km < kmUlt) return Number(v[pctField]) || pctBase;
+  const ciclo = _cicloVeiculo(v);
+  const kmDesde = v.km - kmUlt;
+  const ciclosCompletos = kmDesde / ciclo; // fracionário
+  // Cada ciclo consome 20% da vida útil (linear)
+  const pctPerdido = ciclosCompletos * 20;
+  return Math.max(0, Math.min(100, Math.round(pctBase - pctPerdido)));
+}
+function _pctPneuAtual(v){ return _pctPecaCalculado(v, 'kmultpneu', 'pneus'); }
+function _pctPastAtual(v){ return _pctPecaCalculado(v, 'kmultpast', 'past'); }
+
+// Atualiza pneus/past do objeto v com base no km atual. Só altera se kmult foi cadastrado.
+// Retorna { mudou:true|false, antesPneus, agoraPneus, antesPast, agoraPast }
+function _sincronizarPecasKm(v){
+  const antes = {pneus: v.pneus, past: v.past};
+  const novoPneu = _pctPneuAtual(v);
+  const novoPast = _pctPastAtual(v);
+  let mudou = false;
+  if(v.kmultpneu && Number(v.kmultpneu) > 0 && novoPneu !== v.pneus){
+    v.pneus = novoPneu; mudou = true;
+  }
+  if(v.kmultpast && Number(v.kmultpast) > 0 && novoPast !== v.past){
+    v.past = novoPast; mudou = true;
+  }
+  return { mudou, antes, agora: {pneus: v.pneus, past: v.past} };
+}
 function diffMeses(d1,d2){if(!d1||!d2)return null;const a=new Date(d1),b=new Date(d2);return Math.round((b-a)/(1000*60*60*24*30.44));}
 function addMeses(d,m){if(!d||!m)return'';const dt=new Date(d);dt.setMonth(dt.getMonth()+parseInt(m));return dt.toISOString().split('T')[0];}
 function hoje(){return new Date().toISOString().split('T')[0];}
@@ -1378,49 +1449,107 @@ function renderDash(){
 function renderRevAlerts(){
   const el=document.getElementById('rev-alert-banner');
   if(!el) return;
-  const vencidas=[], proximas=[];
+
+  // Agora considera 3 tipos de alerta pra cada viatura:
+  // 1. Revisão (KM ou tempo)  ─→ helper _statusRev
+  // 2. Pneus (por ciclo)     ─→ helper _statusPneu
+  // 3. Pastilhas (por ciclo) ─→ helper _statusPast
+  const items = [];
   vtr.forEach(v=>{
     if(v.status==='BAIXADA') return;
-    const km=parseInt(v.km,10)||0;
-    const kmrev=parseInt(v.kmrev,10)||0;
-    if(kmrev<=0) return;
-    const d=kmrev-km;
-    if(d<0) vencidas.push({v,d});
-    else if(d<=1000) proximas.push({v,d});
+    const rev = _statusRev(v);
+    const pneu = _statusPneu(v);
+    const past = _statusPast(v);
+    const alertas = [];
+    if(rev.nivel && rev.nivel !== 'ok'){
+      alertas.push({tipo:'rev', nivel:rev.nivel, titulo:rev.titulo,
+        peso: rev.nivel==='vencida' ? 0 : rev.nivel==='proxima' ? 1 : 2,
+        detalhe: rev.kmRest!==null ? `${rev.kmRest.toLocaleString()} km` : (rev.diasRest!==null ? `${rev.diasRest}d` : '')});
+    }
+    if(pneu.nivel === 'vencido' || pneu.nivel === 'proximo'){
+      alertas.push({tipo:'pneu', nivel:pneu.nivel, titulo:pneu.titulo,
+        peso: pneu.nivel==='vencido' ? 3 : 4,
+        detalhe: `Pneus ${pneu.nivel==='vencido'?'VENCIDO':'próx.'} · restam ${Math.max(0,pneu.restante).toLocaleString()} km`});
+    }
+    if(past.nivel === 'vencido' || past.nivel === 'proximo'){
+      alertas.push({tipo:'past', nivel:past.nivel, titulo:past.titulo,
+        peso: past.nivel==='vencido' ? 5 : 6,
+        detalhe: `Pastilhas ${past.nivel==='vencido'?'VENCIDO':'próx.'} · restam ${Math.max(0,past.restante).toLocaleString()} km`});
+    }
+    if(alertas.length){
+      // Pega o alerta com menor peso (mais urgente) pra ordenar a linha
+      alertas.sort((a,b)=>a.peso-b.peso);
+      items.push({v, principal: alertas[0], todos: alertas});
+    }
   });
-  vencidas.sort((a,b)=>a.d-b.d);
-  proximas.sort((a,b)=>a.d-b.d);
-  if(!vencidas.length && !proximas.length){
-    el.innerHTML='';
+
+  if(!items.length){
+    el.innerHTML = `
+      <div class="rev-banner ok" style="border-color:#a7f3d0;background:linear-gradient(135deg,#ecfdf5 0%,#f0fdf4 100%)">
+        <div class="rev-banner-h">
+          <div class="rev-banner-t"><span class="rb-icon" style="color:#059669">✓</span>Sem alertas de manutenção</div>
+        </div>
+      </div>`;
     return;
   }
-  const urgente=vencidas.length>0;
-  const itens=[...vencidas,...proximas].slice(0,8).map(({v,d})=>{
-    const cls=d<0?'r':'y';
-    const stTxt=d<0?`⚠ ${Math.abs(d).toLocaleString()} km VENCIDO`:`≈ ${d.toLocaleString()} km`;
-    return `<div class="rev-it" onclick="navigate('vtr');setTimeout(()=>openEdit(${v.id}),250)">
+
+  items.sort((a,b)=>a.principal.peso-b.principal.peso);
+
+  // Contagens por tipo/nível pro cabeçalho
+  const contas = {revVenc:0, revProx:0, pneuVenc:0, pneuProx:0, pastVenc:0, pastProx:0};
+  items.forEach(it => it.todos.forEach(a => {
+    if(a.tipo==='rev' && a.nivel==='vencida') contas.revVenc++;
+    else if(a.tipo==='rev' && (a.nivel==='proxima'||a.nivel==='proxima-tempo')) contas.revProx++;
+    else if(a.tipo==='pneu' && a.nivel==='vencido') contas.pneuVenc++;
+    else if(a.tipo==='pneu' && a.nivel==='proximo') contas.pneuProx++;
+    else if(a.tipo==='past' && a.nivel==='vencido') contas.pastVenc++;
+    else if(a.tipo==='past' && a.nivel==='proximo') contas.pastProx++;
+  }));
+
+  const urgente = contas.revVenc + contas.pneuVenc + contas.pastVenc > 0;
+
+  const linhas = items.slice(0,8).map(({v, principal, todos})=>{
+    const cls = principal.nivel==='vencida' || principal.nivel==='vencido' ? 'r' : 'y';
+    const badges = todos.map(a=>{
+      const cor = (a.nivel==='vencida'||a.nivel==='vencido') ? '#dc2626'
+                : (a.nivel==='proxima'||a.nivel==='proximo') ? '#d97706'
+                : '#f97316';
+      const label = a.tipo==='rev' ? 'Revisão' : a.tipo==='pneu' ? 'Pneu' : 'Pastilha';
+      return `<span title="${a.titulo}" style="display:inline-block;padding:2px 7px;border-radius:10px;background:${cor}15;color:${cor};font-size:9px;font-weight:700;font-family:var(--mono);letter-spacing:0.5px;margin-right:4px">${label}</span>`;
+    }).join('');
+    return `<div class="rev-it" onclick="navigate('vtr');setTimeout(()=>openEdit(${v.id}),250)" title="${principal.titulo}">
       <div class="rev-it-l ${cls}"></div>
       <div class="rev-it-b">
         <div class="rev-it-top">
           <span class="rev-it-pref">${v.pref||v.placa}</span>
           <span class="rev-it-modelo">${v.marca} ${v.modelo}</span>
         </div>
-        <div class="rev-it-info">KM ${(v.km||0).toLocaleString()} / Próx ${(v.kmrev||0).toLocaleString()}</div>
+        <div class="rev-it-info" style="margin-top:2px">${badges}</div>
+        <div class="rev-it-info" style="margin-top:2px">${principal.detalhe} · KM ${(v.km||0).toLocaleString()}</div>
       </div>
-      <div class="rev-it-st ${cls}">${stTxt}</div>
+      <div class="rev-it-st ${cls}">${principal.detalhe.split('·')[0].trim()}</div>
     </div>`;
   }).join('');
-  const restante=(vencidas.length+proximas.length)-8;
-  const maisLink=restante>0?`<div style="margin-top:10px;text-align:center;font-size:11px;color:var(--txt2)">+ ${restante} outra(s) — <a onclick="navigate('vtr')" style="color:var(--cyan);cursor:pointer;text-decoration:underline">ver todas</a></div>`:'';
+
+  const restante = items.length - 8;
+  const maisLink = restante>0
+    ? `<div style="margin-top:10px;text-align:center;font-size:11px;color:var(--txt2)">+ ${restante} outra(s) — <a onclick="navigate('vtr')" style="color:var(--cyan);cursor:pointer;text-decoration:underline">ver todas</a></div>`
+    : '';
+
+  const partes = [];
+  if(contas.revVenc)  partes.push(`<span class="rbc rbc-r">⚠ Revisão vencida: ${contas.revVenc}</span>`);
+  if(contas.revProx)  partes.push(`<span class="rbc rbc-y">⏱ Revisão próxima: ${contas.revProx}</span>`);
+  if(contas.pneuVenc) partes.push(`<span class="rbc rbc-r">🛞 Pneu vencido: ${contas.pneuVenc}</span>`);
+  if(contas.pneuProx) partes.push(`<span class="rbc rbc-y">🛞 Pneu próx.: ${contas.pneuProx}</span>`);
+  if(contas.pastVenc) partes.push(`<span class="rbc rbc-r">🛑 Pastilha venc.: ${contas.pastVenc}</span>`);
+  if(contas.pastProx) partes.push(`<span class="rbc rbc-y">🛑 Pastilha próx.: ${contas.pastProx}</span>`);
+
   el.innerHTML=`<div class="rev-banner ${urgente?'urgente':''}">
     <div class="rev-banner-h">
-      <div class="rev-banner-t"><span class="rb-icon">${urgente?'🔴':'🟡'}</span>Alerta de Revisão</div>
-      <div class="rev-banner-counts">
-        ${vencidas.length?`<span class="rbc rbc-r">⚠ ${vencidas.length} vencida${vencidas.length>1?'s':''}</span>`:''}
-        ${proximas.length?`<span class="rbc rbc-y">⏱ ${proximas.length} próxima${proximas.length>1?'s':''}</span>`:''}
-      </div>
+      <div class="rev-banner-t"><span class="rb-icon">${urgente?'🔴':'🟡'}</span>Alertas de manutenção</div>
+      <div class="rev-banner-counts">${partes.join('')}</div>
     </div>
-    <div class="rev-list">${itens}</div>
+    <div class="rev-list">${linhas}</div>
     ${maisLink}
   </div>`;
 }
@@ -1596,6 +1725,13 @@ function renderVtr(){
     if(d!==null){kt=d<0?`⚠ −${Math.abs(d).toLocaleString()} km`:d<=1000?`≈${d.toLocaleString()} km`:`+${d.toLocaleString()} km`;kc=d<0?'er':d<=1000?'wa':'ok';}
     const pc=v.pneus<=20?'pf-r':v.pneus<=50?'pf-y':'pf-g';
     const bc=v.past<=20?'pf-r':v.past<=50?'pf-y':'pf-g';
+    // Ciclo por KM: dispara alerta quando faltam ≤500km pro fim do ciclo (4500/9000 km)
+    const _sp = _statusPneu(v);
+    const _spa = _statusPast(v);
+    const pIco = _sp.nivel==='vencido' ? '<span title="'+_sp.titulo+'" style="color:#dc2626;font-weight:800;margin-right:3px">⚠</span>'
+              : _sp.nivel==='proximo' ? '<span title="'+_sp.titulo+'" style="color:#d97706;font-weight:800;margin-right:3px">⚠</span>' : '';
+    const bIco = _spa.nivel==='vencido' ? '<span title="'+_spa.titulo+'" style="color:#dc2626;font-weight:800;margin-right:3px">⚠</span>'
+              : _spa.nivel==='proximo' ? '<span title="'+_spa.titulo+'" style="color:#d97706;font-weight:800;margin-right:3px">⚠</span>' : '';
     const sc=v.status==='EM CONDIÇÃO'?'p-on':v.status==='BAIXADA'?'p-bx':'p-mn';
     const sl=v.status==='EM CONDIÇÃO'?'ATIVA':v.status==='BAIXADA'?'BAIXADA':'MANUT.';
     const tp=(v.tipo.split(' - ')[0]||v.tipo).substring(0,4);
@@ -1618,8 +1754,8 @@ function renderVtr(){
       <td class="km-m">${v.kmrev>0?v.kmrev.toLocaleString()+' km':'—'}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${fmtDt(v.dtprev)}</td>
       <td class="km-m ${kc}">${kt}</td>
-      <td><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${v.pneus}%</span></div></td>
-      <td><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${v.past}%</span></div></td>
+      <td><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIco}${v.pneus}%</span></div></td>
+      <td><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${bIco}${v.past}%</span></div></td>
       <td><span class="pill ${sc}">${sl}</span></td>
       <td>${osHtml}</td>
       <td style="font-size:11px;color:var(--txt2);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.local||'—'}</td>
@@ -2486,6 +2622,7 @@ function atualizarPreviewKm(vid){
 function salvarKm(){
   if(blockSeVisitante())return;
   let alterados = 0, ignorados = [];
+  let pecasSincronizadas = 0;
   vtr.forEach(v=>{
     const inp = document.getElementById('km-'+v.id);
     if(!inp) return;
@@ -2497,8 +2634,14 @@ function salvarKm(){
     if(nv === kmAtual) return;
     v.km = nv;
     alterados++;
-    // kmrev é FIXO (KM Última Rev + intervalo). Só muda no cadastro/edição quando registra revisão.
-    // KM Restante é derivado: kmrev - km (renderizado dinamicamente)
+    // AUTO-SINCRONIZA % de pneus e pastilhas com o KM novo. Ciclos:
+    //   L200/Titânio/Trailblazer = 5.000 km · demais = 10.000 km
+    //   Cada ciclo consome 20% da vida útil. Alerta 500 km antes.
+    const sinc = _sincronizarPecasKm(v);
+    if(sinc.mudou){
+      pecasSincronizadas++;
+      console.log('[SYNC PEÇAS] '+(v.pref||v.placa)+' pneus '+sinc.antes.pneus+'→'+sinc.agora.pneus+' · past '+sinc.antes.past+'→'+sinc.agora.past);
+    }
     const restante = (parseInt(v.kmrev,10)||0) - nv;
     console.log('[KM] vtr='+v.id+' '+(v.pref||v.placa)+' · novo km='+nv+' · kmrev='+v.kmrev+' · restante='+restante);
   });
@@ -2518,7 +2661,8 @@ function salvarKm(){
       alert('⚠ Não foi possível salvar no servidor.\nVerifique a conexão e tente novamente.');
       return;
     }
-    let msg = `✅ ${alterados} KM atualizado(s) e sincronizado(s)`;
+    let msg = `✅ ${alterados} KM atualizado(s)`;
+    if(pecasSincronizadas > 0) msg += ` · ${pecasSincronizadas} viatura(s) tiveram pneus/pastilhas recalculados`;
     if(ignorados.length > 0) msg += ` · ${ignorados.length} ignorada(s): ${ignorados.slice(0,3).join(', ')}`;
     toast(msg);
   }).catch(err => {
@@ -3105,6 +3249,12 @@ function renderVtrCards(){
     const sl = v.status==='EM CONDIÇÃO'?'ATIVA':v.status==='BAIXADA'?'BAIXADA':'MANUT.';
     const pc = v.pneus<=20?'pf-r':v.pneus<=50?'pf-y':'pf-g';
     const bc = v.past<=20?'pf-r':v.past<=50?'pf-y':'pf-g';
+    const _spM = _statusPneu(v);
+    const _spaM = _statusPast(v);
+    const pIcoM = _spM.nivel==='vencido' ? '<span title="'+_spM.titulo+'" style="color:#dc2626;font-weight:800;margin-right:3px">⚠</span>'
+               : _spM.nivel==='proximo' ? '<span title="'+_spM.titulo+'" style="color:#d97706;font-weight:800;margin-right:3px">⚠</span>' : '';
+    const bIcoM = _spaM.nivel==='vencido' ? '<span title="'+_spaM.titulo+'" style="color:#dc2626;font-weight:800;margin-right:3px">⚠</span>'
+               : _spaM.nivel==='proximo' ? '<span title="'+_spaM.titulo+'" style="color:#d97706;font-weight:800;margin-right:3px">⚠</span>' : '';
     const osV = osMap[v.placa];
     const osHtml = osV&&osV.length ? `<span class="op" style="font-size:10px">${osV[0]}</span>` : '';
     // Alerta unificado KM + tempo
@@ -3152,11 +3302,11 @@ function renderVtrCards(){
         </div>
         <div class="vtr-ci">
           <div class="vtr-ci-lbl">Pneus</div>
-          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${v.pneus}%</span></div></div>
+          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIcoM}${v.pneus}%</span></div></div>
         </div>
         <div class="vtr-ci">
           <div class="vtr-ci-lbl">Pastilhas</div>
-          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${v.past}%</span></div></div>
+          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${bIcoM}${v.past}%</span></div></div>
         </div>
       </div>
       <div class="vtr-card-acts">
