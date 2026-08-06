@@ -783,11 +783,26 @@ select option{background:var(--s2)}
   <div class="fg" style="margin-bottom:8px">
     <div class="fi" style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="f-ismoto" onchange="toggleMotoFields()" style="width:18px;height:18px;cursor:pointer"> 🏍️ Esta viatura é uma <strong>moto</strong> (pneu dianteiro e traseiro separados)</label></div>
   </div>
-  <div id="f-pneu-carro" class="fg fg4">
-    <div class="fi"><label>Pneus (%)</label><select id="f-pneus" class="pct-sel"></select></div>
-    <div class="fi"><label>KM Última Troca</label><input type="number" id="f-kmultpneu" oninput="calcPneuPrx('f')" placeholder="km na última troca"></div>
-    <div class="fi"><label>KM Próx. Troca (auto +35.000)</label><input type="number" id="f-kmprxpneu" readonly style="opacity:.5"></div>
-    <div class="fi"><label>Data Troca Pneu</label><input type="date" id="f-dtpneu"></div>
+  <div id="f-pneu-carro">
+    <div class="fg fg4">
+      <div class="fi"><label>Pneus (%) — geral</label><select id="f-pneus" class="pct-sel"></select></div>
+      <div class="fi"><label>KM Última Troca (todos)</label><input type="number" id="f-kmultpneu" oninput="calcPneuPrx('f');_aplicarKmATodos()" placeholder="preenche os 4 abaixo"></div>
+      <div class="fi"><label>KM Próx. Troca (auto)</label><input type="number" id="f-kmprxpneu" readonly style="opacity:.5"></div>
+      <div class="fi"><label>Data Troca Pneu</label><input type="date" id="f-dtpneu"></div>
+    </div>
+    <!-- 4 posições individuais: se algum pneu foi trocado sozinho, cada um tem km próprio -->
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span>🛞 KM da última troca por posição</span>
+        <span style="font-weight:400;color:var(--txt3);font-size:10px">(só preencha se algum pneu foi trocado individualmente)</span>
+      </div>
+      <div class="fg fg4">
+        <div class="fi"><label style="color:var(--txt2)">Dianteiro Esquerdo</label><input type="number" id="f-kmpneu-de" placeholder="km"></div>
+        <div class="fi"><label style="color:var(--txt2)">Dianteiro Direito</label><input type="number" id="f-kmpneu-dd" placeholder="km"></div>
+        <div class="fi"><label style="color:var(--txt2)">Traseiro Esquerdo</label><input type="number" id="f-kmpneu-te" placeholder="km"></div>
+        <div class="fi"><label style="color:var(--txt2)">Traseiro Direito</label><input type="number" id="f-kmpneu-td" placeholder="km"></div>
+      </div>
+    </div>
   </div>
   <div id="f-pneu-moto" style="display:none">
     <div style="background:var(--s2);padding:10px;border-radius:8px;margin-bottom:8px">
@@ -1331,8 +1346,59 @@ function _statusPecaKm(v, kmUltField){
   return {nivel:'ok', kmDesde, restante, ciclo, titulo:`${restante.toLocaleString()} km até próxima troca`};
 }
 
-function _statusPneu(v){ return _statusPecaKm(v, 'kmultpneu'); }
 function _statusPast(v){ return _statusPecaKm(v, 'kmultpast'); }
+
+// ─── PNEUS INDIVIDUAIS (4 posições: DE, DD, TE, TD) ────────────────
+// Se algum pneu foi trocado sozinho, ele tem próprio kmpneu_XX cadastrado.
+// Se todos vazios, cai no fallback kmultpneu (compatibilidade retro).
+const _PNEU_POSICOES = ['de','dd','te','td'];
+const _PNEU_LABELS = {de:'Dianteiro Esq.', dd:'Dianteiro Dir.', te:'Traseiro Esq.', td:'Traseiro Dir.'};
+
+function _kmUltPneuPos(v, pos){
+  const kmInd = Number(v['kmpneu_'+pos]) || 0;
+  if(kmInd > 0) return kmInd;
+  // Fallback: usa o kmultpneu global (todos foram trogados juntos)
+  return Number(v.kmultpneu) || 0;
+}
+
+function _statusPneuIndiv(v, pos){
+  const ciclo = _cicloVeiculo(v);
+  const alertaMargem = 500;
+  const kmUlt = _kmUltPneuPos(v, pos);
+  if(!kmUlt || !v.km) return {nivel:null, ciclo, pos};
+  const kmDesde = v.km - kmUlt;
+  if(kmDesde < 0) return {nivel:null, ciclo, pos};
+  const restante = ciclo - kmDesde;
+  if(restante <= 0) return {
+    nivel:'vencido', kmDesde, restante, ciclo, pos,
+    titulo: `${_PNEU_LABELS[pos]}: ciclo VENCIDO — passou ${Math.abs(restante).toLocaleString()} km`
+  };
+  if(kmDesde >= (ciclo - alertaMargem)) return {
+    nivel:'proximo', kmDesde, restante, ciclo, pos,
+    titulo: `${_PNEU_LABELS[pos]}: faltam ${restante.toLocaleString()} km`
+  };
+  return {nivel:'ok', kmDesde, restante, ciclo, pos, titulo:`${_PNEU_LABELS[pos]}: ${restante.toLocaleString()} km até próxima troca`};
+}
+
+// Retorna o PIOR status entre os 4 pneus (pra alerta agregado da viatura).
+// Ordem de gravidade: vencido > proximo > ok > null
+function _statusPneu(v){
+  const statuses = _PNEU_POSICOES.map(p => _statusPneuIndiv(v, p));
+  const validos = statuses.filter(s => s.nivel !== null);
+  if(!validos.length) return {nivel:null, ciclo: _cicloVeiculo(v)};
+  const ordem = {vencido:0, proximo:1, ok:2};
+  validos.sort((a,b) => ordem[a.nivel] - ordem[b.nivel]);
+  const pior = validos[0];
+  const posComAlerta = validos.filter(s => s.nivel === 'vencido' || s.nivel === 'proximo').length;
+  // Titulo agregado
+  let titulo = pior.titulo;
+  if(posComAlerta > 1) titulo = `${posComAlerta} pneu(s) em alerta — ${pior.titulo}`;
+  return {...pior, titulo, posComAlerta};
+}
+
+function _statusPneuTodos(v){
+  return _PNEU_POSICOES.map(p => ({pos:p, label: _PNEU_LABELS[p], status: _statusPneuIndiv(v, p)}));
+}
 
 // Formata "faltam X km" pra exibir sob o % de pneu/pastilha.
 // Cores por urgência (mesma escala usada na revisão):
@@ -1340,13 +1406,15 @@ function _statusPast(v){ return _statusPecaKm(v, 'kmultpast'); }
 //   • ≤ 500 km     → crítico, VERMELHO
 //   • ≤ 1.000 km   → atenção, LARANJA
 //   • > 1.000 km   → informativo, cinza
-function _pecaFaltaHtml(status){
+// suffix (opcional): sufixo mostrado apenas no bloco (ex: " (2 pneus)" ou " · DE")
+function _pecaFaltaHtml(status, suffix){
   if(!status || !status.nivel || status.restante === undefined) return '';
   const kmR = status.restante;
+  const sfx = suffix ? ` ${suffix}` : '';
   let cor, peso = '600';
   if(kmR <= 0){
     cor = '#dc2626'; peso = '800';
-    return `<div style="font-size:9px;color:${cor};font-weight:${peso};font-family:var(--mono);margin-top:2px;line-height:1.15">⚠ VENCIDO ${Math.abs(kmR).toLocaleString()} km</div>`;
+    return `<div style="font-size:9px;color:${cor};font-weight:${peso};font-family:var(--mono);margin-top:2px;line-height:1.15">⚠ VENCIDO ${Math.abs(kmR).toLocaleString()} km${sfx}</div>`;
   } else if(kmR <= 500){
     cor = '#dc2626'; peso = '800';
   } else if(kmR <= 1000){
@@ -1354,7 +1422,23 @@ function _pecaFaltaHtml(status){
   } else {
     cor = 'var(--txt3)'; peso = '500';
   }
-  return `<div style="font-size:9px;color:${cor};font-weight:${peso};font-family:var(--mono);margin-top:2px;line-height:1.15">faltam ${kmR.toLocaleString()} km</div>`;
+  return `<div style="font-size:9px;color:${cor};font-weight:${peso};font-family:var(--mono);margin-top:2px;line-height:1.15">faltam ${kmR.toLocaleString()} km${sfx}</div>`;
+}
+
+// HTML compacto mostrando os 4 pneus individualmente (usado como tooltip/detail)
+function _pneus4Html(v){
+  const todos = _statusPneuTodos(v);
+  if(todos.every(t => t.status.nivel === null)) return '';
+  const cor = (nivel) => nivel==='vencido' ? '#dc2626' : nivel==='proximo' ? '#d97706' : 'var(--txt2)';
+  const linhas = todos.map(t => {
+    if(t.status.nivel === null) return `<div style="font-size:9px;color:var(--txt3)">${t.label}: —</div>`;
+    const kmR = t.status.restante;
+    let txt;
+    if(kmR <= 0) txt = `⚠ VENCIDO ${Math.abs(kmR).toLocaleString()} km`;
+    else txt = `faltam ${kmR.toLocaleString()} km`;
+    return `<div style="font-size:9px;color:${cor(t.status.nivel)};font-family:var(--mono);font-weight:${kmR<=1000?'700':'500'}">${t.label}: ${txt}</div>`;
+  }).join('');
+  return `<div style="background:#f8f9fb;border:1px solid var(--border);border-radius:6px;padding:6px 8px;margin-top:4px">${linhas}</div>`;
 }
 
 // Auto-calcula % da peça baseado no km desde última troca.
@@ -1408,6 +1492,17 @@ function calcR(p){
 function calcPneuPrx(p){
   const kmUltPneu=parseInt(document.getElementById(p+'-kmultpneu').value)||0;
   document.getElementById(p+'-kmprxpneu').value = kmUltPneu>0 ? kmUltPneu+35000 : '';
+}
+// Quando usuário preenche "KM Última Troca (todos)" e nenhum campo individual
+// tem valor ainda, popula automaticamente os 4 pneus com esse valor.
+// Se algum dos 4 já tiver valor, respeita e não sobrescreve.
+function _aplicarKmATodos(){
+  const km = parseInt(document.getElementById('f-kmultpneu').value) || 0;
+  if(!km) return;
+  ['de','dd','te','td'].forEach(pos => {
+    const el = document.getElementById('f-kmpneu-'+pos);
+    if(el && !el.value) el.value = km;
+  });
 }
 // Intervalos de troca de pneu para moto (dianteiro x traseiro)
 const PNEU_MOTO_INTERVALO = { d: 8000, t: 6000 };
@@ -1777,7 +1872,7 @@ function renderVtr(){
       <td class="km-m">${v.kmrev>0?v.kmrev.toLocaleString()+' km':'—'}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${fmtDt(v.dtprev)}</td>
       <td class="km-m ${kc}">${kt}</td>
-      <td><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIco}${v.pneus}%</span></div>${_pecaFaltaHtml(_sp)}</td>
+      <td><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIco}${v.pneus}%</span></div>${_pecaFaltaHtml(_sp, _sp.pos ? ' · '+(_PNEU_LABELS[_sp.pos]||'').split(' ').map(s=>s[0]).join('') : '')}${_sp.posComAlerta>1 ? '<div style="font-size:9px;color:#dc2626;font-family:var(--mono);font-weight:700;margin-top:1px">'+_sp.posComAlerta+' em alerta</div>' : ''}</td>
       <td><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${bIco}${v.past}%</span></div>${_pecaFaltaHtml(_spa)}</td>
       <td><span class="pill ${sc}">${sl}</span></td>
       <td>${osHtml}</td>
@@ -2298,7 +2393,7 @@ function openCad(){
   if(blockSeVisitante())return;
   editId=null;
   document.getElementById('cad-title').textContent='Nova Viatura';
-  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-motivo','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast','f-kmultpast','f-kmprxpast','f-kmultpneu','f-kmprxpneu','f-dtpneu','f-kmultpneud','f-kmprxpneud','f-dtpneud','f-kmultpneut','f-kmprxpneut','f-dtpneut'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-pref','f-tomb','f-marca','f-modelo','f-versao','f-placa','f-local','f-dest','f-motivo','f-km','f-kmult','f-kmrev','f-anofab','f-anomod','f-dtrev','f-dtprev','f-dtpast','f-kmultpast','f-kmprxpast','f-kmultpneu','f-kmprxpneu','f-dtpneu','f-kmultpneud','f-kmprxpneud','f-dtpneud','f-kmultpneut','f-kmprxpneut','f-dtpneut','f-kmpneu-de','f-kmpneu-dd','f-kmpneu-te','f-kmpneu-td'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-ismoto').checked=false;
   toggleMotoFields();
   document.getElementById('f-status').value='EM CONDIÇÃO';
@@ -2332,7 +2427,12 @@ function salvarCad(){
   const kmPrxPneuT=kmUltPneuT>0 ? kmUltPneuT+PNEU_MOTO_INTERVALO.t : 0;
   const dtpneuT=document.getElementById('f-dtpneut').value;
   const pneuTPct=parseInt(document.getElementById('f-pneut-pct').value)||100;
-  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,motivoBaixa:document.getElementById('f-motivo').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,kmUltPast,kmPrxPast,kmUltPneu,kmPrxPneu,dtpneu,isMoto,kmUltPneuD,kmPrxPneuD,dtpneuD,pneuDPct,kmUltPneuT,kmPrxPneuT,dtpneuT,pneuTPct,sit:document.getElementById('f-sit').value};
+  // Pneus individuais (4 posições) — se vazio, cai no fallback kmUltPneu (backward compat)
+  const kmpneu_de = parseInt(document.getElementById('f-kmpneu-de').value)||0;
+  const kmpneu_dd = parseInt(document.getElementById('f-kmpneu-dd').value)||0;
+  const kmpneu_te = parseInt(document.getElementById('f-kmpneu-te').value)||0;
+  const kmpneu_td = parseInt(document.getElementById('f-kmpneu-td').value)||0;
+  const v={id:editId||Date.now(),pref:document.getElementById('f-pref').value,tomb:document.getElementById('f-tomb').value,tipo:document.getElementById('f-tipo').value,marca:document.getElementById('f-marca').value.toUpperCase(),modelo:document.getElementById('f-modelo').value.toUpperCase(),versao:document.getElementById('f-versao').value,trans:document.getElementById('f-trans').value,anofab:parseInt(document.getElementById('f-anofab').value)||0,anomod:parseInt(document.getElementById('f-anomod').value)||0,placa:document.getElementById('f-placa').value.toUpperCase(),km,kmUltRev,kmrev,iv,dtrev:document.getElementById('f-dtrev').value,dtprev:document.getElementById('f-dtprev').value,status:document.getElementById('f-status').value,os:'',local:document.getElementById('f-local').value,dest:document.getElementById('f-dest').value,motivoBaixa:document.getElementById('f-motivo').value,pneus:parseInt(document.getElementById('f-pneus').value)||0,past:parseInt(document.getElementById('f-past').value)||0,dtpast:document.getElementById('f-dtpast').value,durpast:parseInt(document.getElementById('f-durpast').value)||12,kmUltPast,kmPrxPast,kmUltPneu,kmPrxPneu,dtpneu,kmpneu_de,kmpneu_dd,kmpneu_te,kmpneu_td,isMoto,kmUltPneuD,kmPrxPneuD,dtpneuD,pneuDPct,kmUltPneuT,kmPrxPneuT,dtpneuT,pneuTPct,sit:document.getElementById('f-sit').value};
   if(!v.placa){alert('Informe a placa.');return;}
   const isEdit = !!editId;
   if(isEdit){const i=vtr.findIndex(x=>x.id===editId);if(i>=0)vtr[i]=v;}else vtr.push(v);
@@ -2568,6 +2668,11 @@ function openEdit(id){
   document.getElementById('f-kmultpneu').value=v.kmUltPneu||'';
   document.getElementById('f-kmprxpneu').value=v.kmPrxPneu||(v.kmUltPneu?v.kmUltPneu+35000:'');
   document.getElementById('f-dtpneu').value=v.dtpneu||'';
+  // Pneus individuais (4 posições)
+  document.getElementById('f-kmpneu-de').value = v.kmpneu_de || '';
+  document.getElementById('f-kmpneu-dd').value = v.kmpneu_dd || '';
+  document.getElementById('f-kmpneu-te').value = v.kmpneu_te || '';
+  document.getElementById('f-kmpneu-td').value = v.kmpneu_td || '';
   // Moto
   document.getElementById('f-ismoto').checked = !!v.isMoto;
   document.getElementById('f-kmultpneud').value=v.kmUltPneuD||'';
@@ -3325,7 +3430,7 @@ function renderVtrCards(){
         </div>
         <div class="vtr-ci">
           <div class="vtr-ci-lbl">Pneus</div>
-          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIcoM}${v.pneus}%</span></div>${_pecaFaltaHtml(_spM)}</div>
+          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIcoM}${v.pneus}%</span></div>${_pecaFaltaHtml(_spM, _spM.posComAlerta>1?'('+_spM.posComAlerta+' pneus)':'')}${_pneus4Html(v)}</div>
         </div>
         <div class="vtr-ci">
           <div class="vtr-ci-lbl">Pastilhas</div>
