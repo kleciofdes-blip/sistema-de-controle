@@ -251,6 +251,12 @@ td{padding:10px 13px;vertical-align:middle;background:var(--s1);border-bottom:1p
 .rev-it-st.r{color:var(--red)}
 .rev-it-st.y{color:var(--amber)}
 
+/* Filtros da página Alertas */
+.al-flt{font-size:12px;padding:8px 14px;border-radius:8px;font-weight:600;background:#fff;color:var(--txt2);border:1px solid var(--border);transition:all .15s;cursor:pointer}
+.al-flt:hover{border-color:var(--cyan);color:var(--txt)}
+.al-flt.on{background:var(--cyan);color:#fff;border-color:var(--cyan)}
+.al-flt.on span{opacity:.9!important}
+
 /* Alerta por TEMPO (data ≤ 30 dias) — tom laranja pra distinguir do amarelo (km) */
 #vtr-table tr.rev-proxima-tempo td,
 #vtr-table tr.rev-proxima-tempo td:nth-child(1),
@@ -635,6 +641,7 @@ select option{background:var(--s2)}
     <div class="sb-sec">Menu</div>
     <div class="ni on" onclick="goTo('dash',this)"><span class="ic">📊</span>Dashboard</div>
     <div class="ni" onclick="goTo('vtr',this)"><span class="ic">🚔</span>Viaturas<span class="nb" id="badge">0</span></div>
+    <div class="ni" onclick="goTo('alertas',this)"><span class="ic">🚨</span>Alertas<span class="nb" id="badge-alertas" style="background:#dc2626;color:#fff">0</span></div>
     <div class="ni" onclick="goTo('os',this)"><span class="ic">📋</span>OS Abertas<span class="nb" id="badge-os">0</span></div>
     <div class="ni" onclick="goTo('os-hist',this)"><span class="ic">✅</span>OS Finalizadas</div>
     <div class="ni" onclick="goTo('pastilhas',this)"><span class="ic">🔩</span>Pastilhas</div>
@@ -695,6 +702,30 @@ select option{background:var(--s2)}
       </div>
       <!-- MOBILE VTR CARDS -->
       <div class="vtr-cards" id="vtr-cards"></div>
+    </div>
+
+    <!-- ═══════ PÁGINA DE ALERTAS ═══════════════════════════════════ -->
+    <div class="page" id="p-alertas">
+      <div class="tr-h">
+        <h2>🚨 Alertas de Manutenção</h2>
+        <span class="tr-cnt" id="al-total-cnt">—</span>
+        <button class="btn btn-cy" style="margin-left:auto" onclick="openKmModal()">📍 Atualizar KM</button>
+      </div>
+
+      <!-- Filtros de tipo -->
+      <div class="tc" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-gh al-flt on" data-flt="todos" onclick="_setFltAlerta('todos')">Todos <span id="al-cnt-todos" style="opacity:.6">0</span></button>
+        <button class="btn btn-gh al-flt" data-flt="revisao" onclick="_setFltAlerta('revisao')">🔧 Revisão <span id="al-cnt-rev" style="opacity:.6">0</span></button>
+        <button class="btn btn-gh al-flt" data-flt="pneu" onclick="_setFltAlerta('pneu')">🛞 Pneus <span id="al-cnt-pneu" style="opacity:.6">0</span></button>
+        <button class="btn btn-gh al-flt" data-flt="past" onclick="_setFltAlerta('past')">🛑 Pastilhas <span id="al-cnt-past" style="opacity:.6">0</span></button>
+        <button class="btn btn-gh al-flt" data-flt="vencido" onclick="_setFltAlerta('vencido')">⚠ Só vencidos <span id="al-cnt-venc" style="opacity:.6">0</span></button>
+      </div>
+
+      <!-- Resumo em cards no topo -->
+      <div id="al-resumo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px;margin-bottom:14px"></div>
+
+      <!-- Lista de viaturas com alerta -->
+      <div id="al-lista"></div>
     </div>
 
     <div class="page" id="p-os">
@@ -1529,14 +1560,15 @@ function goTo(p,el){
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('p-'+p).classList.add('on');
   if(el)el.classList.add('on');
-  const t={dash:'Dashboard',vtr:'Viaturas',os:'OS Prime Abertas','os-hist':'OS Finalizadas',pastilhas:'Pastilhas',pneus:'Estoque Pneus'};
+  const t={dash:'Dashboard',vtr:'Viaturas',alertas:'Alertas de Manutenção',os:'OS Prime Abertas','os-hist':'OS Finalizadas',pastilhas:'Pastilhas',pneus:'Estoque Pneus'};
   document.getElementById('tbt').textContent=t[p]||p;
   const btn=document.getElementById('topbtn');
-  const bmap={dash:'openCad()',vtr:'openCad()',os:'openOsModal()','os-hist':'openOsModal()',pastilhas:'openPastModal()',pneus:'openPneu()'};
-  const blbl={dash:'+ Nova Viatura',vtr:'+ Nova Viatura',os:'+ Nova OS','os-hist':'+ Nova OS',pastilhas:'🔩 Registrar Troca',pneus:'+ Pneu'};
+  const bmap={dash:'openCad()',vtr:'openCad()',alertas:'openKmModal()',os:'openOsModal()','os-hist':'openOsModal()',pastilhas:'openPastModal()',pneus:'openPneu()'};
+  const blbl={dash:'+ Nova Viatura',vtr:'+ Nova Viatura',alertas:'📍 Atualizar KM',os:'+ Nova OS','os-hist':'+ Nova OS',pastilhas:'🔩 Registrar Troca',pneus:'+ Pneu'};
   btn.setAttribute('onclick',bmap[p]||'openCad()');btn.textContent=blbl[p]||'+ Novo';
   if(p==='dash')renderDash();
   if(p==='vtr'){renderVtr();if(isMobile())renderVtrCards();else setTimeout(syncTopScrollbar,100);}
+  if(p==='alertas')renderAlertas();
   if(p==='os')renderOs();
   if(p==='os-hist')renderOsHist();
   if(p==='pastilhas')renderPastilhas();
@@ -1562,6 +1594,7 @@ function renderDash(){
     <div class="sc c-or"><div class="sc-gl"></div><div class="sc-lb">OS Abertas</div><div class="sc-vl">${osAb}</div><div class="sc-sb">Em processo</div></div>
     <div class="sc c-am"><div class="sc-gl"></div><div class="sc-lb">Rev. Urgente</div><div class="sc-vl">${rv+rp}</div><div class="sc-sb">${rv} vencida / ${rp} próxima</div></div>`;
   renderDonut(em,bx,mn,n);renderBar();renderAlerts();renderRevAlerts();renderRevChart();renderOsChart();syncMobileBadges();
+  _atualizarBadgeAlertas();
 }
 
 function renderRevAlerts(){
@@ -1670,6 +1703,146 @@ function renderRevAlerts(){
     <div class="rev-list">${linhas}</div>
     ${maisLink}
   </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PÁGINA DE ALERTAS — lista completa de viaturas com pendências
+// ═══════════════════════════════════════════════════════════════════
+let _fltAlerta = 'todos';
+function _setFltAlerta(f){
+  _fltAlerta = f;
+  document.querySelectorAll('.al-flt').forEach(b => b.classList.toggle('on', b.dataset.flt === f));
+  renderAlertas();
+}
+
+function _coletarAlertas(){
+  const items = [];
+  vtr.forEach(v => {
+    if(v.status === 'BAIXADA') return;
+    const rev = _statusRev(v);
+    const pneu = _statusPneu(v);
+    const past = _statusPast(v);
+    const alertas = [];
+    if(rev.nivel && rev.nivel !== 'ok'){
+      alertas.push({tipo:'revisao', nivel:rev.nivel, titulo:rev.titulo, kmRest:rev.kmRest, diasRest:rev.diasRest,
+        peso: rev.nivel==='vencida' ? 0 : rev.nivel==='proxima' ? 1 : 2});
+    }
+    if(pneu.nivel === 'vencido' || pneu.nivel === 'proximo'){
+      alertas.push({tipo:'pneu', nivel:pneu.nivel, titulo:pneu.titulo, kmRest:pneu.restante, posComAlerta:pneu.posComAlerta||1,
+        peso: pneu.nivel==='vencido' ? 3 : 4});
+    }
+    if(past.nivel === 'vencido' || past.nivel === 'proximo'){
+      alertas.push({tipo:'past', nivel:past.nivel, titulo:past.titulo, kmRest:past.restante,
+        peso: past.nivel==='vencido' ? 5 : 6});
+    }
+    if(alertas.length){
+      alertas.sort((a,b)=>a.peso-b.peso);
+      items.push({v, principal: alertas[0], alertas});
+    }
+  });
+  items.sort((a,b)=>a.principal.peso-b.principal.peso);
+  return items;
+}
+
+function renderAlertas(){
+  const el = document.getElementById('p-alertas');
+  if(!el) return;
+  const todos = _coletarAlertas();
+
+  // Contagens por tipo (independentes)
+  const contas = {todos: todos.length, rev:0, pneu:0, past:0, venc:0};
+  todos.forEach(it => {
+    it.alertas.forEach(a => {
+      if(a.tipo === 'revisao') contas.rev++;
+      if(a.tipo === 'pneu') contas.pneu++;
+      if(a.tipo === 'past') contas.past++;
+      if(a.nivel === 'vencida' || a.nivel === 'vencido') contas.venc++;
+    });
+  });
+  document.getElementById('al-total-cnt').textContent = todos.length + ' viatura(s)';
+  document.getElementById('al-cnt-todos').textContent = todos.length;
+  document.getElementById('al-cnt-rev').textContent = contas.rev;
+  document.getElementById('al-cnt-pneu').textContent = contas.pneu;
+  document.getElementById('al-cnt-past').textContent = contas.past;
+  document.getElementById('al-cnt-venc').textContent = contas.venc;
+
+  // Cards de resumo no topo
+  const resumo = document.getElementById('al-resumo');
+  const revV = todos.filter(x => x.alertas.some(a => a.tipo==='revisao' && a.nivel==='vencida')).length;
+  const revP = todos.filter(x => x.alertas.some(a => a.tipo==='revisao' && (a.nivel==='proxima'||a.nivel==='proxima-tempo'))).length;
+  const pnV = todos.filter(x => x.alertas.some(a => a.tipo==='pneu' && a.nivel==='vencido')).length;
+  const pnP = todos.filter(x => x.alertas.some(a => a.tipo==='pneu' && a.nivel==='proximo')).length;
+  const paV = todos.filter(x => x.alertas.some(a => a.tipo==='past' && a.nivel==='vencido')).length;
+  const paP = todos.filter(x => x.alertas.some(a => a.tipo==='past' && a.nivel==='proximo')).length;
+
+  const cardResumo = (label,valor,cor) =>
+    `<div style="background:#fff;border:1px solid var(--border);border-left:3px solid ${cor};border-radius:8px;padding:10px 14px">
+      <div style="font-size:10px;color:var(--txt2);letter-spacing:1px;text-transform:uppercase;font-weight:600">${label}</div>
+      <div style="font-size:22px;font-weight:800;color:${cor};line-height:1;margin-top:4px">${valor}</div>
+    </div>`;
+  resumo.innerHTML =
+    cardResumo('Revisão Vencida', revV, '#dc2626') +
+    cardResumo('Revisão Próxima', revP, '#d97706') +
+    cardResumo('Pneu Vencido', pnV, '#dc2626') +
+    cardResumo('Pneu Próximo', pnP, '#d97706') +
+    cardResumo('Past. Vencida', paV, '#dc2626') +
+    cardResumo('Past. Próxima', paP, '#d97706');
+
+  // Aplica filtro
+  let filtrados = todos;
+  if(_fltAlerta === 'revisao') filtrados = todos.filter(x => x.alertas.some(a => a.tipo==='revisao'));
+  else if(_fltAlerta === 'pneu') filtrados = todos.filter(x => x.alertas.some(a => a.tipo==='pneu'));
+  else if(_fltAlerta === 'past') filtrados = todos.filter(x => x.alertas.some(a => a.tipo==='past'));
+  else if(_fltAlerta === 'vencido') filtrados = todos.filter(x => x.alertas.some(a => a.nivel==='vencida' || a.nivel==='vencido'));
+
+  const lista = document.getElementById('al-lista');
+  if(!filtrados.length){
+    lista.innerHTML = `<div style="background:linear-gradient(135deg,#ecfdf5 0%,#f0fdf4 100%);border:1px solid #a7f3d0;border-radius:12px;padding:40px 20px;text-align:center">
+      <div style="font-size:48px;margin-bottom:12px">✓</div>
+      <div style="font-size:16px;font-weight:700;color:#059669">Sem alertas pendentes</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:4px">Nenhuma viatura em estado ${_fltAlerta==='todos'?'de alerta':'para esse filtro'}.</div>
+    </div>`;
+    return;
+  }
+
+  lista.innerHTML = filtrados.map(({v, principal, alertas}) => {
+    const badges = alertas.map(a => {
+      const cor = (a.nivel==='vencida'||a.nivel==='vencido') ? '#dc2626'
+                : (a.nivel==='proxima'||a.nivel==='proximo') ? '#d97706'
+                : '#f97316';
+      const label = a.tipo==='revisao' ? 'Revisão' : a.tipo==='pneu' ? 'Pneu' : 'Pastilha';
+      const detalhe = a.kmRest !== null && a.kmRest !== undefined
+        ? (a.kmRest <= 0 ? `VENCIDO ${Math.abs(a.kmRest).toLocaleString()} km` : `${a.kmRest.toLocaleString()} km`)
+        : (a.diasRest !== null && a.diasRest !== undefined ? `${a.diasRest} dia(s)` : '');
+      const posInfo = a.tipo==='pneu' && a.posComAlerta > 1 ? ` (${a.posComAlerta} pneus)` : '';
+      return `<div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:${cor}12;color:${cor};font-size:11px;font-weight:700;font-family:var(--mono);border:1px solid ${cor}30" title="${a.titulo}">
+        <span>${label}${posInfo}</span>
+        <span style="opacity:.75;font-weight:600">${detalhe}</span>
+      </div>`;
+    }).join('');
+    const cls = principal.nivel==='vencida'||principal.nivel==='vencido' ? '#dc2626' : '#d97706';
+    return `<div onclick="openEdit(${v.id})" style="background:#fff;border:1px solid var(--border);border-left:4px solid ${cls};border-radius:10px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:14px" onmouseover="this.style.background='#f8fafc';this.style.borderColor='${cls}'" onmouseout="this.style.background='#fff';this.style.borderColor='var(--border)'">
+      <div style="min-width:64px">
+        <div style="background:var(--cyan);color:#fff;padding:3px 10px;border-radius:6px;font-weight:700;font-family:var(--mono);font-size:12px;text-align:center">${v.pref||'—'}</div>
+        <div style="font-size:10px;color:var(--txt3);text-align:center;margin-top:3px;font-family:var(--mono)">${v.placa}</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--txt);line-height:1.2">${v.marca} ${v.modelo}</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:2px">KM ${(v.km||0).toLocaleString()} · ${v.status}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${badges}</div>
+      </div>
+      <div style="color:var(--txt3);font-size:20px">›</div>
+    </div>`;
+  }).join('');
+}
+
+// Sincroniza badge do menu lateral com contagem total de viaturas em alerta
+function _atualizarBadgeAlertas(){
+  const badge = document.getElementById('badge-alertas');
+  if(!badge) return;
+  const n = _coletarAlertas().length;
+  badge.textContent = n;
+  badge.style.display = n > 0 ? 'inline-block' : 'none';
 }
 
 // ══ Chart.js helpers ════════════════════════════════════════════
