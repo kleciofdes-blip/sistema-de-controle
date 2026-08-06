@@ -1334,6 +1334,29 @@ function _statusPecaKm(v, kmUltField){
 function _statusPneu(v){ return _statusPecaKm(v, 'kmultpneu'); }
 function _statusPast(v){ return _statusPecaKm(v, 'kmultpast'); }
 
+// Formata "faltam X km" pra exibir sob o % de pneu/pastilha.
+// Cores por urgência (mesma escala usada na revisão):
+//   • ≤ 0 km       → vencido, VERMELHO
+//   • ≤ 500 km     → crítico, VERMELHO
+//   • ≤ 1.000 km   → atenção, LARANJA
+//   • > 1.000 km   → informativo, cinza
+function _pecaFaltaHtml(status){
+  if(!status || !status.nivel || status.restante === undefined) return '';
+  const kmR = status.restante;
+  let cor, peso = '600';
+  if(kmR <= 0){
+    cor = '#dc2626'; peso = '800';
+    return `<div style="font-size:9px;color:${cor};font-weight:${peso};font-family:var(--mono);margin-top:2px;line-height:1.15">⚠ VENCIDO ${Math.abs(kmR).toLocaleString()} km</div>`;
+  } else if(kmR <= 500){
+    cor = '#dc2626'; peso = '800';
+  } else if(kmR <= 1000){
+    cor = '#d97706'; peso = '700';
+  } else {
+    cor = 'var(--txt3)'; peso = '500';
+  }
+  return `<div style="font-size:9px;color:${cor};font-weight:${peso};font-family:var(--mono);margin-top:2px;line-height:1.15">faltam ${kmR.toLocaleString()} km</div>`;
+}
+
 // Auto-calcula % da peça baseado no km desde última troca.
 // Modelo: cada ciclo (5k ou 10k km) reduz 20% da vida útil da peça.
 // 100% = novo (kmDesde = 0). Após 5 ciclos → 0%.
@@ -1754,8 +1777,8 @@ function renderVtr(){
       <td class="km-m">${v.kmrev>0?v.kmrev.toLocaleString()+' km':'—'}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${fmtDt(v.dtprev)}</td>
       <td class="km-m ${kc}">${kt}</td>
-      <td><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIco}${v.pneus}%</span></div></td>
-      <td><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${bIco}${v.past}%</span></div></td>
+      <td><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIco}${v.pneus}%</span></div>${_pecaFaltaHtml(_sp)}</td>
+      <td><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${bIco}${v.past}%</span></div>${_pecaFaltaHtml(_spa)}</td>
       <td><span class="pill ${sc}">${sl}</span></td>
       <td>${osHtml}</td>
       <td style="font-size:11px;color:var(--txt2);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.local||'—'}</td>
@@ -3302,11 +3325,11 @@ function renderVtrCards(){
         </div>
         <div class="vtr-ci">
           <div class="vtr-ci-lbl">Pneus</div>
-          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIcoM}${v.pneus}%</span></div></div>
+          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${pc}" style="width:${v.pneus}%"></div></div><span class="pb-n">${pIcoM}${v.pneus}%</span></div>${_pecaFaltaHtml(_spM)}</div>
         </div>
         <div class="vtr-ci">
           <div class="vtr-ci-lbl">Pastilhas</div>
-          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${bIcoM}${v.past}%</span></div></div>
+          <div class="vtr-ci-val"><div class="pb"><div class="pb-t"><div class="pb-f ${bc}" style="width:${v.past}%"></div></div><span class="pb-n">${bIcoM}${v.past}%</span></div>${_pecaFaltaHtml(_spaM)}</div>
         </div>
       </div>
       <div class="vtr-card-acts">
