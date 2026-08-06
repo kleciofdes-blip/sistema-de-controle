@@ -1722,26 +1722,90 @@ function _coletarAlertas(){
   vtr.forEach(v => {
     if(v.status === 'BAIXADA') return;
     const rev = _statusRev(v);
-    const pneu = _statusPneu(v);
-    const past = _statusPast(v);
+    const pneuCiclo = _statusPneu(v);
+    const pastCiclo = _statusPast(v);
     const alertas = [];
+
+    // 1. REVISÃO (KM ou tempo)
     if(rev.nivel && rev.nivel !== 'ok'){
-      alertas.push({tipo:'revisao', nivel:rev.nivel, titulo:rev.titulo, kmRest:rev.kmRest, diasRest:rev.diasRest,
+      alertas.push({tipo:'revisao', nivel:rev.nivel, titulo:rev.titulo,
+        kmRest:rev.kmRest, diasRest:rev.diasRest,
         peso: rev.nivel==='vencida' ? 0 : rev.nivel==='proxima' ? 1 : 2});
     }
-    if(pneu.nivel === 'vencido' || pneu.nivel === 'proximo'){
-      alertas.push({tipo:'pneu', nivel:pneu.nivel, titulo:pneu.titulo, kmRest:pneu.restante, posComAlerta:pneu.posComAlerta||1,
-        peso: pneu.nivel==='vencido' ? 3 : 4});
+
+    // 2. PNEU — ciclo por posição (4 pneus individuais)
+    if(pneuCiclo.nivel === 'vencido' || pneuCiclo.nivel === 'proximo'){
+      alertas.push({tipo:'pneu', nivel:pneuCiclo.nivel, titulo:pneuCiclo.titulo,
+        kmRest:pneuCiclo.restante, posComAlerta:pneuCiclo.posComAlerta||1,
+        peso: pneuCiclo.nivel==='vencido' ? 3 : 5});
     }
-    if(past.nivel === 'vencido' || past.nivel === 'proximo'){
-      alertas.push({tipo:'past', nivel:past.nivel, titulo:past.titulo, kmRest:past.restante,
-        peso: past.nivel==='vencido' ? 5 : 6});
+
+    // 3. PNEU — por kmPrxPneu (35k km fixo) — se cadastrado
+    if(v.kmPrxPneu > 0){
+      const d = v.kmPrxPneu - v.km;
+      if(d < 0){
+        alertas.push({tipo:'pneu-km', nivel:'vencido',
+          titulo:`Pneu vencido — ${Math.abs(d).toLocaleString()} km além do prazo`,
+          kmRest:d, peso: 3});
+      } else if(d <= 2000){
+        alertas.push({tipo:'pneu-km', nivel:'proximo',
+          titulo:`Pneu em ${d.toLocaleString()} km`,
+          kmRest:d, peso: 5});
+      }
     }
+
+    // 4. PNEU — % crítico (<= 20%)
+    if(v.pneus <= 20){
+      alertas.push({tipo:'pneu-pct', nivel: v.pneus <= 10 ? 'vencido' : 'proximo',
+        titulo:`Pneus críticos — ${v.pneus}% de vida útil restante`,
+        pct: v.pneus, peso: v.pneus <= 10 ? 3 : 5});
+    }
+
+    // 5. PASTILHA — ciclo por KM (última troca)
+    if(pastCiclo.nivel === 'vencido' || pastCiclo.nivel === 'proximo'){
+      alertas.push({tipo:'past', nivel:pastCiclo.nivel, titulo:pastCiclo.titulo,
+        kmRest:pastCiclo.restante,
+        peso: pastCiclo.nivel==='vencido' ? 4 : 6});
+    }
+
+    // 6. PASTILHA — por kmPrxPast (se cadastrado)
+    if(v.kmPrxPast > 0){
+      const d = v.kmPrxPast - v.km;
+      if(d < 0){
+        alertas.push({tipo:'past-km', nivel:'vencido',
+          titulo:`Pastilha vencida — ${Math.abs(d).toLocaleString()} km além do prazo`,
+          kmRest:d, peso: 4});
+      } else if(d <= 1000){
+        alertas.push({tipo:'past-km', nivel:'proximo',
+          titulo:`Pastilha em ${d.toLocaleString()} km`,
+          kmRest:d, peso: 6});
+      }
+    }
+
+    // 7. PASTILHA — % crítico
+    if(v.past <= 20){
+      alertas.push({tipo:'past-pct', nivel: v.past <= 10 ? 'vencido' : 'proximo',
+        titulo:`Pastilhas críticas — ${v.past}% de vida útil restante`,
+        pct: v.past, peso: v.past <= 10 ? 4 : 6});
+    }
+
+    // 8. PASTILHA — vencida por data (dtpast + durpast)
+    if(v.dtpast && v.durpast){
+      const prx = addMeses(v.dtpast, v.durpast);
+      if(prx && prx <= hoje()){
+        alertas.push({tipo:'past-data', nivel:'vencido',
+          titulo:`Troca de pastilha vencida por prazo — previsto ${fmtDt(prx)}`,
+          dataPrx: prx, peso: 4});
+      }
+    }
+
     if(alertas.length){
+      // Ordena alertas dessa viatura por gravidade
       alertas.sort((a,b)=>a.peso-b.peso);
       items.push({v, principal: alertas[0], alertas});
     }
   });
+  // Ordena viaturas pelo alerta mais grave
   items.sort((a,b)=>a.principal.peso-b.principal.peso);
   return items;
 }
@@ -1751,13 +1815,18 @@ function renderAlertas(){
   if(!el) return;
   const todos = _coletarAlertas();
 
+  // Helpers de agrupamento de tipos
+  const isPneu = t => t==='pneu' || t==='pneu-km' || t==='pneu-pct';
+  const isPast = t => t==='past' || t==='past-km' || t==='past-pct' || t==='past-data';
+  const isRev  = t => t==='revisao';
+
   // Contagens por tipo (independentes)
   const contas = {todos: todos.length, rev:0, pneu:0, past:0, venc:0};
   todos.forEach(it => {
     it.alertas.forEach(a => {
-      if(a.tipo === 'revisao') contas.rev++;
-      if(a.tipo === 'pneu') contas.pneu++;
-      if(a.tipo === 'past') contas.past++;
+      if(isRev(a.tipo)) contas.rev++;
+      if(isPneu(a.tipo)) contas.pneu++;
+      if(isPast(a.tipo)) contas.past++;
       if(a.nivel === 'vencida' || a.nivel === 'vencido') contas.venc++;
     });
   });
@@ -1768,14 +1837,14 @@ function renderAlertas(){
   document.getElementById('al-cnt-past').textContent = contas.past;
   document.getElementById('al-cnt-venc').textContent = contas.venc;
 
-  // Cards de resumo no topo
+  // Cards de resumo no topo — cada tipo conta viaturas distintas
   const resumo = document.getElementById('al-resumo');
-  const revV = todos.filter(x => x.alertas.some(a => a.tipo==='revisao' && a.nivel==='vencida')).length;
-  const revP = todos.filter(x => x.alertas.some(a => a.tipo==='revisao' && (a.nivel==='proxima'||a.nivel==='proxima-tempo'))).length;
-  const pnV = todos.filter(x => x.alertas.some(a => a.tipo==='pneu' && a.nivel==='vencido')).length;
-  const pnP = todos.filter(x => x.alertas.some(a => a.tipo==='pneu' && a.nivel==='proximo')).length;
-  const paV = todos.filter(x => x.alertas.some(a => a.tipo==='past' && a.nivel==='vencido')).length;
-  const paP = todos.filter(x => x.alertas.some(a => a.tipo==='past' && a.nivel==='proximo')).length;
+  const revV = todos.filter(x => x.alertas.some(a => isRev(a.tipo) && a.nivel==='vencida')).length;
+  const revP = todos.filter(x => x.alertas.some(a => isRev(a.tipo) && (a.nivel==='proxima'||a.nivel==='proxima-tempo'))).length;
+  const pnV = todos.filter(x => x.alertas.some(a => isPneu(a.tipo) && a.nivel==='vencido')).length;
+  const pnP = todos.filter(x => x.alertas.some(a => isPneu(a.tipo) && a.nivel==='proximo')).length;
+  const paV = todos.filter(x => x.alertas.some(a => isPast(a.tipo) && a.nivel==='vencido')).length;
+  const paP = todos.filter(x => x.alertas.some(a => isPast(a.tipo) && a.nivel==='proximo')).length;
 
   const cardResumo = (label,valor,cor) =>
     `<div style="background:#fff;border:1px solid var(--border);border-left:3px solid ${cor};border-radius:8px;padding:10px 14px">
@@ -1792,9 +1861,9 @@ function renderAlertas(){
 
   // Aplica filtro
   let filtrados = todos;
-  if(_fltAlerta === 'revisao') filtrados = todos.filter(x => x.alertas.some(a => a.tipo==='revisao'));
-  else if(_fltAlerta === 'pneu') filtrados = todos.filter(x => x.alertas.some(a => a.tipo==='pneu'));
-  else if(_fltAlerta === 'past') filtrados = todos.filter(x => x.alertas.some(a => a.tipo==='past'));
+  if(_fltAlerta === 'revisao') filtrados = todos.filter(x => x.alertas.some(a => isRev(a.tipo)));
+  else if(_fltAlerta === 'pneu') filtrados = todos.filter(x => x.alertas.some(a => isPneu(a.tipo)));
+  else if(_fltAlerta === 'past') filtrados = todos.filter(x => x.alertas.some(a => isPast(a.tipo)));
   else if(_fltAlerta === 'vencido') filtrados = todos.filter(x => x.alertas.some(a => a.nivel==='vencida' || a.nivel==='vencido'));
 
   const lista = document.getElementById('al-lista');
@@ -1812,10 +1881,25 @@ function renderAlertas(){
       const cor = (a.nivel==='vencida'||a.nivel==='vencido') ? '#dc2626'
                 : (a.nivel==='proxima'||a.nivel==='proximo') ? '#d97706'
                 : '#f97316';
-      const label = a.tipo==='revisao' ? 'Revisão' : a.tipo==='pneu' ? 'Pneu' : 'Pastilha';
-      const detalhe = a.kmRest !== null && a.kmRest !== undefined
-        ? (a.kmRest <= 0 ? `VENCIDO ${Math.abs(a.kmRest).toLocaleString()} km` : `${a.kmRest.toLocaleString()} km`)
-        : (a.diasRest !== null && a.diasRest !== undefined ? `${a.diasRest} dia(s)` : '');
+      // Label por tipo
+      const label =
+        a.tipo==='revisao'    ? 'Revisão' :
+        a.tipo==='pneu'       ? 'Pneu' :
+        a.tipo==='pneu-km'    ? 'Pneu (km)' :
+        a.tipo==='pneu-pct'   ? 'Pneu (%)' :
+        a.tipo==='past'       ? 'Pastilha' :
+        a.tipo==='past-km'    ? 'Pastilha (km)' :
+        a.tipo==='past-pct'   ? 'Pastilha (%)' :
+        a.tipo==='past-data'  ? 'Pastilha (data)' : 'Alerta';
+      // Detalhe conforme o dado disponível
+      let detalhe = '';
+      if(a.pct !== undefined) detalhe = `${a.pct}%`;
+      else if(a.dataPrx) detalhe = `desde ${fmtDt(a.dataPrx)}`;
+      else if(a.kmRest !== null && a.kmRest !== undefined){
+        detalhe = a.kmRest <= 0 ? `VENCIDO ${Math.abs(a.kmRest).toLocaleString()} km` : `${a.kmRest.toLocaleString()} km`;
+      } else if(a.diasRest !== null && a.diasRest !== undefined){
+        detalhe = `${a.diasRest} dia(s)`;
+      }
       const posInfo = a.tipo==='pneu' && a.posComAlerta > 1 ? ` (${a.posComAlerta} pneus)` : '';
       return `<div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:${cor}12;color:${cor};font-size:11px;font-weight:700;font-family:var(--mono);border:1px solid ${cor}30" title="${a.titulo}">
         <span>${label}${posInfo}</span>
